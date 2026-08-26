@@ -4,8 +4,8 @@
 
 - Date: 2026-08-26
 - Stage: Day 0 complete, Day 1 starting
-- Active goal: Understand the smallest Qt Widgets program and the first Git workflow
-- Next action: Inspect, stage, commit, and push the learner's first code change
+- Active goal: Understand the smallest Qt Widgets program before adding more controls
+- Next action: Explain the roles and lifetime of the objects in the client entry point
 
 ## Completed
 
@@ -19,6 +19,8 @@
 - Configured the project in Qt Creator 17 with the MSVC Qt kit.
 - Verified ordinary run works from Qt Creator.
 - Changed the client label text, rebuilt the target, and verified the new text at runtime.
+- Completed the first Git inspect, stage, commit, and push workflow.
+- Published learner-authored commit `c022b06` to GitHub.
 
 ## Known Environment Notes
 
@@ -34,7 +36,7 @@
 - [ ] Explain the roles of `QApplication`, `QMainWindow`, and `QLabel` in plain language.
 - [ ] Explain configuration, build, and run as three different steps.
 - [ ] Learn what a pointer stores and what Qt parent ownership does.
-- [ ] Make the first learner-authored commit.
+- [x] Make the first learner-authored commit.
 
 ## Questions To Revisit
 
