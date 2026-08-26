@@ -5,7 +5,7 @@
 - Date: 2026-08-26
 - Stage: Day 1 active (started early on 2026-08-26 with learner approval)
 - Active goal: Explain and verify the complete Qt Widgets client entry point
-- Next action: Run the event-loop experiment and complete the object-role recap
+- Next action: Explain includes, command-line arguments, and object destruction order
 
 ## Completed
 
@@ -24,6 +24,8 @@
 - Replaced inferred `auto*` with explicit `QLabel*` and verified a fresh build.
 - Explained object versus pointer member access and Qt parent ownership correctly.
 - Explained why a source-only change requires rebuilding but not reconfiguring.
+- Verified that removing `app.exec()` ends the process immediately, then restored it.
+- Explained the roles of `QApplication`, `QMainWindow`, and `QLabel` in plain language.
 
 ## Known Environment Notes
 
@@ -36,12 +38,11 @@
 ## Day 1 Checklist
 
 - [x] Change the client label text and verify the change at runtime.
-- [ ] Explain the roles of `QApplication`, `QMainWindow`, and `QLabel` in plain language.
+- [x] Explain the roles of `QApplication`, `QMainWindow`, and `QLabel` in plain language.
 - [x] Explain configuration, build, and run as three different steps.
 - [x] Learn what a pointer stores and what Qt parent ownership does.
 - [x] Make the first learner-authored commit.
 
 ## Questions To Revisit
 
-- What does the Qt event loop do?
-- Why must `QApplication` be created before widgets?
+- Why are local C++ objects destroyed in reverse construction order?
