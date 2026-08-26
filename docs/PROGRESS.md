@@ -3,9 +3,9 @@
 ## Current State
 
 - Date: 2026-08-26
-- Stage: Day 1 active (started early on 2026-08-26 with learner approval)
-- Active goal: Explain and verify the complete Qt Widgets client entry point
-- Next action: Explain includes, command-line arguments, and object destruction order
+- Stage: Day 2 active (started early on 2026-08-26 with learner approval)
+- Active goal: Build and explain the static client interface with Qt Widgets layouts
+- Next action: Replace the single central label with a container and vertical layout
 
 ## Completed
 
@@ -26,6 +26,8 @@
 - Explained why a source-only change requires rebuilding but not reconfiguring.
 - Verified that removing `app.exec()` ends the process immediately, then restored it.
 - Explained the roles of `QApplication`, `QMainWindow`, and `QLabel` in plain language.
+- Completed the Day 1 entry-point explanation and review.
+- Published learner-authored commit `fddd3e4` using an explicit `QLabel*` type.
 
 ## Known Environment Notes
 
@@ -46,3 +48,14 @@
 ## Questions To Revisit
 
 - Why are local C++ objects destroyed in reverse construction order?
+- How a header declaration differs from a linked library implementation.
+- How content alignment differs from assigning a main-window central widget.
+- The exact destruction sequence after `app.exec()` returns.
+
+## Day 2 Checklist
+
+- [ ] Create a central container and attach a vertical layout.
+- [ ] Add a stable camera-preview placeholder.
+- [ ] Add visible status and identity areas.
+- [ ] Add an action-button row.
+- [ ] Build, run, and explain layout ownership in plain language.
