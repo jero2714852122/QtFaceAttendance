@@ -10,7 +10,7 @@ int main(int argc, char* argv[])
     window.setWindowTitle("Face Attendance Client");
     window.setMinimumSize(960, 640);
 
-    auto* status = new QLabel("Client environment ready", &window);
+    auto* status = new QLabel("First qt test", &window);
     status->setAlignment(Qt::AlignCenter);
     window.setCentralWidget(status);
     window.show();
