@@ -3,9 +3,9 @@
 ## Current State
 
 - Date: 2026-08-26
-- Stage: Day 0 complete; optional Day 1 preview only
-- Active goal: Preserve the working environment baseline and preview the client entry point
-- Next action: Formally start Day 1 on 2026-08-27 with the event loop and object-role recap
+- Stage: Day 1 active (started early on 2026-08-26 with learner approval)
+- Active goal: Explain and verify the complete Qt Widgets client entry point
+- Next action: Run the event-loop experiment and complete the object-role recap
 
 ## Completed
 
@@ -33,7 +33,7 @@
 - The existing `Desktop Qt 6.9.1 MinGW 64-bit` kit is not used by this project.
 - OpenCV and face-recognition models are not installed yet.
 
-## Day 1 Preview Completed During Day 0
+## Day 1 Checklist
 
 - [x] Change the client label text and verify the change at runtime.
 - [ ] Explain the roles of `QApplication`, `QMainWindow`, and `QLabel` in plain language.

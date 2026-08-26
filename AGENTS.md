@@ -28,3 +28,7 @@ At the end of each learning session, update `docs/PROGRESS.md` with:
 
 Do not mark a topic complete only because code runs. Ask the learner to explain
 the relevant code in plain language and record concepts that need revisiting.
+
+The schedule may advance ahead of the nominal day when the learner has time,
+but announce the day transition before starting its material. Never change the
+active day silently.
