@@ -4,8 +4,8 @@
 
 - Date: 2026-08-26
 - Stage: Day 0 complete, Day 1 starting
-- Active goal: Understand the smallest Qt Widgets program before adding business logic
-- Next action: Change one label string, build with Ctrl+B, then run with Ctrl+R
+- Active goal: Understand the smallest Qt Widgets program and the first Git workflow
+- Next action: Inspect, stage, commit, and push the learner's first code change
 
 ## Completed
 
@@ -18,6 +18,7 @@
 - Created and pushed the public GitHub repository.
 - Configured the project in Qt Creator 17 with the MSVC Qt kit.
 - Verified ordinary run works from Qt Creator.
+- Changed the client label text, rebuilt the target, and verified the new text at runtime.
 
 ## Known Environment Notes
 
@@ -29,7 +30,7 @@
 
 ## Day 1 Checklist
 
-- [ ] Change the client label text and verify the change at runtime.
+- [x] Change the client label text and verify the change at runtime.
 - [ ] Explain the roles of `QApplication`, `QMainWindow`, and `QLabel` in plain language.
 - [ ] Explain configuration, build, and run as three different steps.
 - [ ] Learn what a pointer stores and what Qt parent ownership does.
