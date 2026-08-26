@@ -2,7 +2,7 @@
 
 ## Outcome
 
-By 2026-09-09, deliver a Qt 6 face-attendance demo that can be built, run,
+By 2026-09-10, deliver a Qt 6 face-attendance demo that can be built, run,
 explained, and shown during internship interviews.
 
 Required evidence:
