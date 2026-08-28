@@ -2,10 +2,10 @@
 
 ## Current State
 
-- Date: 2026-08-27
-- Stage: Day 2 complete (started early on 2026-08-26 with learner approval)
-- Active goal: Preserve the completed static Qt Widgets interface as a learner-authored commit
-- Next action: Review the Day 2 diff, then create and push the learner-authored Day 2 commit
+- Date: 2026-08-28
+- Stage: Day 3 complete
+- Active goal: Preserve the completed signal-slot and timer simulation as a learner-authored commit
+- Next action: Review, commit, and push the Day 3 client interaction changes
 
 ## Completed
 
@@ -37,6 +37,11 @@
 - Used a layout stretch factor so the camera area receives the window's extra vertical space.
 - Added a nested horizontal action layout with enabled start and disabled stop buttons.
 - Explained vertical versus horizontal layout order, nested-layout ownership, and widget destruction through the Qt parent object tree.
+- Published learner-authored Day 2 commit `4658ee6` to GitHub.
+- Connected the camera action buttons to lambdas that update labels and button enabled states.
+- Added a 500 ms `QTimer` that simulates recurring camera-preview updates.
+- Verified the timer starts and stops with the camera controls while the window remains responsive.
+- Explained that 500 ms equals 0.5 seconds and that timer events do not occupy the GUI thread with a blocking loop.
 
 ## Known Environment Notes
 
@@ -70,3 +75,11 @@
 - [x] Add visible status and identity areas.
 - [x] Add an action-button row.
 - [x] Build, run, and explain layout ownership in plain language.
+
+## Day 3 Checklist
+
+- [x] Connect button `clicked` signals to small Lambda responses.
+- [x] Keep start/stop button states consistent with the simulated camera state.
+- [x] Use `QTimer::timeout` for repeated non-blocking preview updates.
+- [x] Stop the timer and restore the preview when the simulated camera closes.
+- [x] Explain why timer-driven updates leave the Qt interface responsive.
