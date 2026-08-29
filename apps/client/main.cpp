@@ -7,6 +7,10 @@
 #include<QHBoxLayout>
 #include<QObject>
 #include<QTimer>
+#include<opencv2/videoio.hpp>
+#include<QImage>
+#include<QPixmap>
+#include<opencv2/imgproc.hpp>
 int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
@@ -36,26 +40,54 @@ int main(int argc, char* argv[])
     actionLayout->addWidget(startButton);
     actionLayout->addWidget(stopButton);
     mainLayout->addLayout(actionLayout);
+
+    cv::VideoCapture camera;
     QTimer*previewTimer=new QTimer(centralWidget);
-    previewTimer->setInterval(500);
+    previewTimer->setInterval(33);
+
     QObject::connect(previewTimer,&QTimer::timeout,cameraPreview,
-        [cameraPreview,markerVisible=false]()mutable{
-        markerVisible=!markerVisible;
-        cameraPreview->setText(markerVisible?" 相机预览（更新中）" : "相机预览");
+        [cameraPreview,&camera,statusLabel](){
+        cv::Mat frame;
+        if(!camera.read(frame)||frame.empty())
+            {
+            statusLabel->setText("读取摄像头画面失败");
+            return;
+        }
+        cv::flip(frame,frame,1);
+        cv::cvtColor(frame,frame,cv::COLOR_BGR2RGB);
+
+        QImage image(
+            frame.data,
+            frame.cols,
+            frame.rows,
+            static_cast<qsizetype>(frame.step),
+            QImage::Format_RGB888
+            );
+
+        cameraPreview->setPixmap(
+            QPixmap::fromImage(image.copy()).scaled(
+                cameraPreview->size(),Qt::KeepAspectRatio,Qt::SmoothTransformation));
     });
 
-
-    QObject::connect(startButton,&QPushButton::clicked,statusLabel,[statusLabel,startButton,stopButton,previewTimer](){
-        statusLabel->setText("状态：已请求摄像头");
+    QObject::connect(startButton,&QPushButton::clicked,statusLabel,
+            [statusLabel,startButton,stopButton,previewTimer,&camera](){
+        if(!camera.open(0)){
+            statusLabel->setText("状态：摄像头打开失败");
+            return;
+        }
+        statusLabel->setText("状态：已开启摄像头");
         startButton->setEnabled(false);
         stopButton->setEnabled(true);
         previewTimer->start();
     });
-    QObject::connect(stopButton,&QPushButton::clicked,statusLabel,[statusLabel,startButton,stopButton,previewTimer,cameraPreview](){
+
+    QObject::connect(stopButton,&QPushButton::clicked,statusLabel,
+            [statusLabel,startButton,stopButton,previewTimer,cameraPreview,&camera](){
         statusLabel->setText("状态：摄像头已关闭");
         stopButton->setEnabled(false);
         startButton->setEnabled(true);
         previewTimer->stop();
+        camera.release();
         cameraPreview->setText("相机预览");
     });
     window.setCentralWidget(centralWidget);

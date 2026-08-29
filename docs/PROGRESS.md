@@ -3,9 +3,9 @@
 ## Current State
 
 - Date: 2026-08-28
-- Stage: Day 3 complete
-- Active goal: Preserve the completed signal-slot and timer simulation as a learner-authored commit
-- Next action: Review, commit, and push the Day 3 client interaction changes
+- Stage: Day 4 complete
+- Active goal: Preserve the working OpenCV camera preview as a learner-authored commit
+- Next action: Review, commit, and push the Day 4 OpenCV camera changes; then begin face detection
 
 ## Completed
 
@@ -42,6 +42,14 @@
 - Added a 500 ms `QTimer` that simulates recurring camera-preview updates.
 - Verified the timer starts and stops with the camera controls while the window remains responsive.
 - Explained that 500 ms equals 0.5 seconds and that timer events do not occupy the GUI thread with a blocking loop.
+- Published learner-authored Day 3 commit `d4a669a` to GitHub.
+- Installed the official OpenCV 4.12.0 Windows package under `E:/Dev/OpenCV`.
+- Configured the client CMake target for OpenCV `core`, `imgproc`, and `videoio`.
+- Verified CMake finds OpenCV, the MSVC Debug build succeeds, and the required OpenCV DLL is copied beside the client executable.
+- Replaced simulated preview text with real `cv::VideoCapture` frame reads.
+- Converted OpenCV BGR frames to Qt RGB images and displayed them in the preview label.
+- Corrected the front-camera mirror effect with a horizontal `cv::flip`.
+- Verified camera open failure handling, timer-driven frame updates, camera release, and a fresh Debug build.
 
 ## Known Environment Notes
 
@@ -51,7 +59,7 @@
 - Qt Creator 20.0.1 is installed under `D:/tools/QT/Tools/QtCreator`.
 - Windows SDK CDB is installed at `C:/Program Files (x86)/Windows Kits/10/Debuggers/x64/cdb.exe`.
 - The existing `Desktop Qt 6.9.1 MinGW 64-bit` kit is not used by this project.
-- OpenCV and face-recognition models are not installed yet.
+- OpenCV 4.12.0 is installed under `E:/Dev/OpenCV/opencv`; face-recognition models are not installed yet.
 
 ## Day 1 Checklist
 
@@ -83,3 +91,11 @@
 - [x] Use `QTimer::timeout` for repeated non-blocking preview updates.
 - [x] Stop the timer and restore the preview when the simulated camera closes.
 - [x] Explain why timer-driven updates leave the Qt interface responsive.
+
+## Day 4 Checklist
+
+- [x] Install and configure OpenCV 4.12.0 for the MSVC Qt client.
+- [x] Open the default camera and report failure visibly.
+- [x] Read real frames with `cv::VideoCapture` and `cv::Mat`.
+- [x] Convert BGR frames to RGB and display them in `QLabel`.
+- [x] Correct the mirror orientation and release the camera on stop.
