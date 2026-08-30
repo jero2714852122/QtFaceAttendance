@@ -21,6 +21,11 @@ add_custom_command(TARGET face_attendance_client POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         $<TARGET_FILE:opencv_world>
         $<TARGET_FILE_DIR:face_attendance_client>
+    COMMAND ${CMAKE_COMMAND} -E make_directory
+        $<TARGET_FILE_DIR:face_attendance_client>/models
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${CMAKE_SOURCE_DIR}/assets/haarcascade_frontalface_default.xml
+        $<TARGET_FILE_DIR:face_attendance_client>/models/haarcascade_frontalface_default.xml
 )
 
 set_target_properties(face_attendance_client PROPERTIES

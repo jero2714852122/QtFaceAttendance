@@ -2,10 +2,10 @@
 
 ## Current State
 
-- Date: 2026-08-28
-- Stage: Day 4 complete
-- Active goal: Preserve the working OpenCV camera preview as a learner-authored commit
-- Next action: Review, commit, and push the Day 4 OpenCV camera changes; then begin face detection
+- Date: 2026-08-30
+- Stage: Day 5 verified, release pending
+- Active goal: Commit and push the verified face-detection increment
+- Next action: Upload Day 5, then announce the Day 6 TCP lesson
 
 ## Completed
 
@@ -50,6 +50,13 @@
 - Converted OpenCV BGR frames to Qt RGB images and displayed them in the preview label.
 - Corrected the front-camera mirror effect with a horizontal `cv::flip`.
 - Verified camera open failure handling, timer-driven frame updates, camera release, and a fresh Debug build.
+- Published learner-authored Day 4 commit `789a7b9` to GitHub.
+- Added the Haar cascade face-detection model to the project assets.
+- Configured the build to copy the model beside the executable and verified the copied model file.
+- Loaded the Haar cascade from the executable directory so the runtime working directory does not matter.
+- Added live face detection and rectangle drawing to the camera preview.
+- Throttled detection to roughly 100 ms while keeping preview updates at roughly 33 ms to reduce GUI-thread stalls.
+- Verified a fresh Debug build after the face-detection changes.
 
 ## Known Environment Notes
 
@@ -99,3 +106,21 @@
 - [x] Read real frames with `cv::VideoCapture` and `cv::Mat`.
 - [x] Convert BGR frames to RGB and display them in `QLabel`.
 - [x] Correct the mirror orientation and release the camera on stop.
+
+## Day 5 Checklist
+
+- [x] Load the Haar cascade model from the application directory.
+- [x] Detect faces in each captured frame.
+- [x] Draw a rectangle around each detected face.
+- [x] Report model or detection failures visibly.
+- [x] Prepare a first resume bullet describing the camera and detection work.
+
+## Resume Draft
+
+- 使用 Qt 6/C++、OpenCV 构建人脸考勤客户端：通过 QTimer 驱动摄像头采集，完成 BGR/RGB 图像转换、镜像校正、Haar 级联人脸检测与实时矩形标注，并处理模型加载失败、摄像头打开失败和资源释放。
+
+## Day 6 Checklist
+
+- [ ] Explain TCP client/server roles and connection lifecycle.
+- [ ] Add a server listening endpoint.
+- [ ] Connect the Qt client and exchange a test message.

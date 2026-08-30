@@ -10,7 +10,11 @@
 #include<opencv2/videoio.hpp>
 #include<QImage>
 #include<QPixmap>
+#include <QCoreApplication>
+#include <QElapsedTimer>
 #include<opencv2/imgproc.hpp>
+#include<vector>
+#include<opencv2/objdetect.hpp>
 int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
@@ -42,11 +46,22 @@ int main(int argc, char* argv[])
     mainLayout->addLayout(actionLayout);
 
     cv::VideoCapture camera;
+    cv::CascadeClassifier faceDetector;
+    const QString modelPath = QCoreApplication::applicationDirPath()
+        + "/models/haarcascade_frontalface_default.xml";
+    if(!faceDetector.load(modelPath.toStdString()))
+    {
+        statusLabel->setText("状态：人脸检测模型加载失败");
+    }
+
     QTimer*previewTimer=new QTimer(centralWidget);
     previewTimer->setInterval(33);
+    QElapsedTimer detectionClock;
+    std::vector<cv::Rect> detectedFaces;
 
     QObject::connect(previewTimer,&QTimer::timeout,cameraPreview,
-        [cameraPreview,&camera,statusLabel](){
+        [cameraPreview,&camera,statusLabel,&faceDetector,&detectionClock,
+         &detectedFaces,identity](){
         cv::Mat frame;
         if(!camera.read(frame)||frame.empty())
             {
@@ -54,8 +69,28 @@ int main(int argc, char* argv[])
             return;
         }
         cv::flip(frame,frame,1);
-        cv::cvtColor(frame,frame,cv::COLOR_BGR2RGB);
+        if(!detectionClock.isValid() || detectionClock.elapsed() >= 100)
+        {
+            cv::Mat grayFrame;
+            cv::cvtColor(frame,grayFrame,cv::COLOR_BGR2GRAY);
+            cv::equalizeHist(grayFrame,grayFrame);
+            faceDetector.detectMultiScale(
+                grayFrame,
+                detectedFaces,
+                1.1,
+                5,
+                0,
+                cv::Size(80,80)
+                );
+            detectionClock.restart();
+            identity->setText(QString("检测到人脸数量：%1").arg(detectedFaces.size()));
+        }
+        for(const cv::Rect&face:detectedFaces)
+        {
+            cv::rectangle(frame,face,cv::Scalar(0,255,0),2);
+        }
 
+        cv::cvtColor(frame,frame,cv::COLOR_BGR2RGB);
         QImage image(
             frame.data,
             frame.cols,
@@ -66,11 +101,16 @@ int main(int argc, char* argv[])
 
         cameraPreview->setPixmap(
             QPixmap::fromImage(image.copy()).scaled(
-                cameraPreview->size(),Qt::KeepAspectRatio,Qt::SmoothTransformation));
+                cameraPreview->size(),Qt::KeepAspectRatio,Qt::FastTransformation));
     });
 
     QObject::connect(startButton,&QPushButton::clicked,statusLabel,
-            [statusLabel,startButton,stopButton,previewTimer,&camera](){
+            [statusLabel,startButton,stopButton,previewTimer,&camera,&faceDetector](){
+        if(faceDetector.empty())
+        {
+            statusLabel->setText("状态：人脸检测模型不可用");
+            return;
+        }
         if(!camera.open(0)){
             statusLabel->setText("状态：摄像头打开失败");
             return;
