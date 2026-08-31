@@ -3,9 +3,9 @@
 ## Current State
 
 - Date: 2026-08-30
-- Stage: Day 5 verified, release pending
-- Active goal: Commit and push the verified face-detection increment
-- Next action: Upload Day 5, then announce the Day 6 TCP lesson
+- Stage: Day 6 active
+- Active goal: Build a minimal Qt TCP client/server text exchange
+- Next action: Add server connection handling, then connect the Qt client
 
 ## Completed
 
@@ -122,5 +122,5 @@
 ## Day 6 Checklist
 
 - [ ] Explain TCP client/server roles and connection lifecycle.
-- [ ] Add a server listening endpoint.
+- [x] Add a server listening endpoint.
 - [ ] Connect the Qt client and exchange a test message.

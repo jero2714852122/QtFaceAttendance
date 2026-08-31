@@ -15,6 +15,7 @@
 #include<opencv2/imgproc.hpp>
 #include<vector>
 #include<opencv2/objdetect.hpp>
+#include<QTcpSocket>
 int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
@@ -58,6 +59,18 @@ int main(int argc, char* argv[])
     previewTimer->setInterval(33);
     QElapsedTimer detectionClock;
     std::vector<cv::Rect> detectedFaces;
+
+    QTcpSocket*attendencSocket=new QTcpSocket(centralWidget);
+    QObject::connect(attendencSocket,&QTcpSocket::connected,statusLabel,
+        [statusLabel,attendencSocket](){
+            statusLabel->setText("状态：已连接服务器");
+        attendencSocket->write("hello 服务器");
+    });
+    QObject::connect(attendencSocket,&QTcpSocket::errorOccurred,statusLabel,
+        [statusLabel,attendencSocket](){
+        statusLabel->setText("状态：服务器连接失败  "+attendencSocket->errorString());
+    });
+    attendencSocket->connectToHost("127.0.0.1",45454);
 
     QObject::connect(previewTimer,&QTimer::timeout,cameraPreview,
         [cameraPreview,&camera,statusLabel,&faceDetector,&detectionClock,
