@@ -6,6 +6,24 @@ Before teaching or changing this repository:
 2. Read `docs/PROGRESS.md`.
 3. Continue from the recorded active goal and next action.
 
+## Mandatory session-start gate
+
+At the beginning of every learning continuation, before announcing a new
+lesson or day, inspect these three sources:
+
+```powershell
+Get-Content -Raw docs\LEARNING_PLAN.md
+Get-Content -Raw docs\PROGRESS.md
+git status --short
+```
+
+Report the current stage from `docs/PROGRESS.md`. Check whether the previous
+stage has a verified result and whether its changes are committed and pushed.
+If verified work is still uncommitted, or if the previous stage is not marked
+complete, remind the learner and finish that release step before advancing.
+Do not silently change the active day. At the end of each session, update
+`docs/PROGRESS.md` with the exact next action and the commit/push state.
+
 The learner writes core networking, threading, persistence, and business logic.
 Codex explains concepts, prepares tooling, reviews learner changes, diagnoses
 errors, and keeps tasks small enough to understand.

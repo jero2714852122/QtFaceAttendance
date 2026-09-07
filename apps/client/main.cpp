@@ -16,6 +16,9 @@
 #include<vector>
 #include<opencv2/objdetect.hpp>
 #include<QTcpSocket>
+#include<QIODevice>
+#include<QDataStream>
+#include<QBuffer>
 int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
@@ -59,13 +62,28 @@ int main(int argc, char* argv[])
     previewTimer->setInterval(33);
     QElapsedTimer detectionClock;
     std::vector<cv::Rect> detectedFaces;
+    bool jpegSent=false;
+
 
     QTcpSocket*attendencSocket=new QTcpSocket(centralWidget);
     QObject::connect(attendencSocket,&QTcpSocket::connected,statusLabel,
         [statusLabel,attendencSocket](){
             statusLabel->setText("状态：已连接服务器");
-        attendencSocket->write("hello 服务器");
+        QByteArray payLoad;
+            auto appendpacket=[](const QByteArray&p){
+                QByteArray packet;
+                QDataStream output(&packet,QIODevice::WriteOnly);
+                output.setByteOrder(QDataStream::BigEndian);
+                output<<quint32(p.size());
+                packet.append(p);
+                return packet;
+        };
+        payLoad.append(appendpacket("msg1"));
+        payLoad.append(appendpacket("msg2"));
+        attendencSocket->write(payLoad);
     });
+
+
     QObject::connect(attendencSocket,&QTcpSocket::errorOccurred,statusLabel,
         [statusLabel,attendencSocket](){
         statusLabel->setText("状态：服务器连接失败  "+attendencSocket->errorString());
@@ -74,7 +92,7 @@ int main(int argc, char* argv[])
 
     QObject::connect(previewTimer,&QTimer::timeout,cameraPreview,
         [cameraPreview,&camera,statusLabel,&faceDetector,&detectionClock,
-         &detectedFaces,identity](){
+         &detectedFaces,identity,&jpegSent,attendencSocket](){
         cv::Mat frame;
         if(!camera.read(frame)||frame.empty())
             {
@@ -111,6 +129,24 @@ int main(int argc, char* argv[])
             static_cast<qsizetype>(frame.step),
             QImage::Format_RGB888
             );
+        if(!jpegSent&&attendencSocket->state()==QAbstractSocket::ConnectedState)
+        {
+            QByteArray jpegBytes;
+            QBuffer buffer(&jpegBytes);
+            buffer.open(QIODevice::WriteOnly);
+            image.save(&buffer,"JPG",80);
+
+            QByteArray jpegPayload="JPEG\n";
+            jpegPayload.append(jpegBytes);
+
+            QByteArray jpegPacket;
+            QDataStream output(&jpegPacket,QIODevice::WriteOnly);
+            output.setByteOrder(QDataStream::BigEndian);
+            output<<quint32(jpegPayload.size());
+            jpegPacket.append(jpegPayload);
+            attendencSocket->write(jpegPacket);
+            jpegSent=true;
+        }
 
         cameraPreview->setPixmap(
             QPixmap::fromImage(image.copy()).scaled(

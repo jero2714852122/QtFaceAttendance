@@ -2,10 +2,10 @@
 
 ## Current State
 
-- Date: 2026-08-30
-- Stage: Day 6 active
-- Active goal: Build a minimal Qt TCP client/server text exchange
-- Next action: Add server connection handling, then connect the Qt client
+- Date: 2026-08-31
+- Stage: Day 7 active
+- Active goal: Add a length-prefixed TCP message protocol
+- Next action: Explain framing, then replace the demo readAll() path
 
 ## Completed
 
@@ -121,6 +121,12 @@
 
 ## Day 6 Checklist
 
-- [ ] Explain TCP client/server roles and connection lifecycle.
+- [x] Explain TCP client/server roles and connection lifecycle.
 - [x] Add a server listening endpoint.
-- [ ] Connect the Qt client and exchange a test message.
+- [x] Connect the Qt client and exchange a test message.
+
+## Day 7 Checklist
+
+- [ ] Explain TCP message framing and the sticky-packet problem.
+- [ ] Add length-prefixed text buffering on the server.
+- [ ] Send and receive a framed JPEG payload.
