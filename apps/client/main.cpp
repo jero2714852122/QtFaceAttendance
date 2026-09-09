@@ -20,6 +20,7 @@
 #include<QDataStream>
 #include<QBuffer>
 #include"mainwindow.h"
+#include "cameracontroller.h"
 int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
@@ -33,7 +34,7 @@ int main(int argc, char* argv[])
     QLabel* identity = window.identityLabel();
     QPushButton* startButton = window.startButton();
     QPushButton* stopButton = window.stopButton();
-    cv::VideoCapture camera;
+    CameraController camera;
     cv::CascadeClassifier faceDetector;
     const QString modelPath = QCoreApplication::applicationDirPath()
         + "/models/haarcascade_frontalface_default.xml";

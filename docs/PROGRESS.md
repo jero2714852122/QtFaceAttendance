@@ -2,10 +2,10 @@
 
 ## Current State
 
-- Date: 2026-09-08
+- Date: 2026-09-09
 - Stage: Day 8 active
 - Active goal: Separate the client UI from the application entry point
-- Next action: Remove the duplicated window setup from `main.cpp`, then move the UI construction into `MainWindow` incrementally
+- Next action: Run-test and commit the `CameraController` extraction, then create `FaceDetector`
 
 ## Completed
 
@@ -63,6 +63,11 @@
 - Published the Day 7 protocol commit `ce27423` to GitHub.
 - Added `mainwindow.h` and `mainwindow.cpp`, registered them with CMake, and verified the client builds.
 - Replaced the client entry-point window type with the new `mainwindow` class while preserving the existing camera, detection, and network logic.
+- Moved the client central widget, layout, labels, and buttons into `MainWindow` with accessor methods.
+- Added `MainWindow` signals for camera start/stop requests while keeping camera business logic in `main.cpp`.
+- Verified the signal-based UI still builds and committed/pushed it as `124a0b1`.
+- Added `CameraController` to encapsulate OpenCV camera open, read, release, and cleanup operations.
+- Switched the client from a direct `cv::VideoCapture` object to `CameraController` and verified a fresh Debug build.
 
 ## Known Environment Notes
 
@@ -141,7 +146,8 @@
 
 - [x] Add a dedicated main-window class and include it in the client target.
 - [x] Construct the new window class from `main.cpp` without removing existing features.
-- [ ] Move UI construction out of `main.cpp` in small, verified steps.
+- [x] Move UI construction out of `main.cpp` in small, verified steps.
+- [x] Route button clicks through `MainWindow` signals.
 - [ ] Separate camera capture and face detection responsibilities.
 - [ ] Separate client networking and frame-packing responsibilities.
 - [ ] Build, run, commit, and push the Day 8 architecture increment.
