@@ -21,6 +21,7 @@
 #include<QBuffer>
 #include"mainwindow.h"
 #include "cameracontroller.h"
+#include"facedetector.h"
 int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
@@ -35,7 +36,7 @@ int main(int argc, char* argv[])
     QPushButton* startButton = window.startButton();
     QPushButton* stopButton = window.stopButton();
     CameraController camera;
-    cv::CascadeClassifier faceDetector;
+    FaceDetector faceDetector;
     const QString modelPath = QCoreApplication::applicationDirPath()
         + "/models/haarcascade_frontalface_default.xml";
     if(!faceDetector.load(modelPath.toStdString()))
@@ -90,14 +91,7 @@ int main(int argc, char* argv[])
             cv::Mat grayFrame;
             cv::cvtColor(frame,grayFrame,cv::COLOR_BGR2GRAY);
             cv::equalizeHist(grayFrame,grayFrame);
-            faceDetector.detectMultiScale(
-                grayFrame,
-                detectedFaces,
-                1.1,
-                5,
-                0,
-                cv::Size(80,80)
-                );
+            faceDetector.detect(grayFrame,detectedFaces);
             detectionClock.restart();
             identity->setText(QString("检测到人脸数量：%1").arg(detectedFaces.size()));
         }

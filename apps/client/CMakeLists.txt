@@ -4,6 +4,7 @@ qt_add_executable(face_attendance_client
     main.cpp
     mainwindow.h mainwindow.cpp
     cameracontroller.h cameracontroller.cpp
+    facedetector.h facedetector.cpp
 )
 
 target_link_libraries(face_attendance_client
