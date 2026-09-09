@@ -2,10 +2,10 @@
 
 ## Current State
 
-- Date: 2026-08-31
-- Stage: Day 7 active
-- Active goal: Add a length-prefixed TCP message protocol
-- Next action: Explain framing, then replace the demo readAll() path
+- Date: 2026-09-08
+- Stage: Day 8 active
+- Active goal: Separate the client UI from the application entry point
+- Next action: Remove the duplicated window setup from `main.cpp`, then move the UI construction into `MainWindow` incrementally
 
 ## Completed
 
@@ -57,6 +57,12 @@
 - Added live face detection and rectangle drawing to the camera preview.
 - Throttled detection to roughly 100 ms while keeping preview updates at roughly 33 ms to reduce GUI-thread stalls.
 - Verified a fresh Debug build after the face-detection changes.
+- Added a 4-byte big-endian length prefix and a persistent receive buffer for TCP framing.
+- Verified combined text frames (`msg1` and `msg2`) are parsed separately.
+- Sent one framed JPEG payload from the client and decoded it successfully on the server.
+- Published the Day 7 protocol commit `ce27423` to GitHub.
+- Added `mainwindow.h` and `mainwindow.cpp`, registered them with CMake, and verified the client builds.
+- Replaced the client entry-point window type with the new `mainwindow` class while preserving the existing camera, detection, and network logic.
 
 ## Known Environment Notes
 
@@ -127,6 +133,15 @@
 
 ## Day 7 Checklist
 
-- [ ] Explain TCP message framing and the sticky-packet problem.
-- [ ] Add length-prefixed text buffering on the server.
-- [ ] Send and receive a framed JPEG payload.
+- [x] Explain TCP message framing and the sticky-packet problem.
+- [x] Add length-prefixed text buffering on the server.
+- [x] Send and receive a framed JPEG payload.
+
+## Day 8 Checklist
+
+- [x] Add a dedicated main-window class and include it in the client target.
+- [x] Construct the new window class from `main.cpp` without removing existing features.
+- [ ] Move UI construction out of `main.cpp` in small, verified steps.
+- [ ] Separate camera capture and face detection responsibilities.
+- [ ] Separate client networking and frame-packing responsibilities.
+- [ ] Build, run, commit, and push the Day 8 architecture increment.

@@ -19,36 +19,20 @@
 #include<QIODevice>
 #include<QDataStream>
 #include<QBuffer>
+#include"mainwindow.h"
 int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
 
-    QMainWindow window;
-    window.setWindowTitle("人脸考勤系统");
-    window.setMinimumSize(960, 640);
+    MainWindow window;
 
-    QWidget*centralWidget=new QWidget(&window);
-    QVBoxLayout*mainLayout=new QVBoxLayout(centralWidget);
-    QLabel*cameraPreview=new QLabel("相机预览",centralWidget);
-    cameraPreview->setAlignment(Qt::AlignCenter);
-    cameraPreview->setMinimumHeight(360);
-    mainLayout->addWidget(cameraPreview,1);
-    QLabel*statusLabel=new QLabel("状态：等待摄像头开启",centralWidget);
-    statusLabel->setMinimumHeight(40);
-    statusLabel->setAlignment(Qt::AlignLeft|Qt::AlignVCenter);
-    mainLayout->addWidget(statusLabel);
-    QLabel*identity=new QLabel("身份：未能识别身份",centralWidget);
-    identity->setMinimumHeight(40);
-    identity->setAlignment(Qt::AlignLeft|Qt::AlignVCenter);
-    mainLayout->addWidget(identity);
-    QHBoxLayout*actionLayout=new QHBoxLayout;
-    QPushButton*startButton=new QPushButton("打开摄像头",centralWidget);
-    QPushButton*stopButton=new QPushButton("关闭摄像头",centralWidget);
-    stopButton->setEnabled(false);
-    actionLayout->addWidget(startButton);
-    actionLayout->addWidget(stopButton);
-    mainLayout->addLayout(actionLayout);
+    QWidget* centralWidget = window.centralWidget();
 
+    QLabel* cameraPreview = window.cameraPreview();
+    QLabel* statusLabel = window.statusLabel();
+    QLabel* identity = window.identityLabel();
+    QPushButton* startButton = window.startButton();
+    QPushButton* stopButton = window.stopButton();
     cv::VideoCapture camera;
     cv::CascadeClassifier faceDetector;
     const QString modelPath = QCoreApplication::applicationDirPath()
@@ -153,7 +137,7 @@ int main(int argc, char* argv[])
                 cameraPreview->size(),Qt::KeepAspectRatio,Qt::FastTransformation));
     });
 
-    QObject::connect(startButton,&QPushButton::clicked,statusLabel,
+    QObject::connect(&window,&MainWindow::startCameraRequested,statusLabel,
             [statusLabel,startButton,stopButton,previewTimer,&camera,&faceDetector](){
         if(faceDetector.empty())
         {
@@ -170,7 +154,7 @@ int main(int argc, char* argv[])
         previewTimer->start();
     });
 
-    QObject::connect(stopButton,&QPushButton::clicked,statusLabel,
+    QObject::connect(&window,&MainWindow::stopCameraRequested,statusLabel,
             [statusLabel,startButton,stopButton,previewTimer,cameraPreview,&camera](){
         statusLabel->setText("状态：摄像头已关闭");
         stopButton->setEnabled(false);
@@ -179,7 +163,7 @@ int main(int argc, char* argv[])
         camera.release();
         cameraPreview->setText("相机预览");
     });
-    window.setCentralWidget(centralWidget);
+
     window.show();
 
     return app.exec();

@@ -2,6 +2,7 @@ find_package(OpenCV 4.12 REQUIRED COMPONENTS core imgproc videoio)
 
 qt_add_executable(face_attendance_client
     main.cpp
+    mainwindow.h mainwindow.cpp
 )
 
 target_link_libraries(face_attendance_client
