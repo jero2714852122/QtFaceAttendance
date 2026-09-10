@@ -5,7 +5,6 @@ qt_add_executable(face_attendance_client
     mainwindow.h mainwindow.cpp
     cameracontroller.h cameracontroller.cpp
     facedetector.h facedetector.cpp
-    frameprotocol.h frameprotocol.cpp
     networkclient.h networkclient.cpp
 )
 
@@ -15,6 +14,7 @@ target_link_libraries(face_attendance_client
         Qt6::Network
         Qt6::Widgets
         ${OpenCV_LIBS}
+        face_attendance_common
 )
 
 target_include_directories(face_attendance_client

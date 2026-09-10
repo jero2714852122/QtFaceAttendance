@@ -10,5 +10,6 @@ find_package(Qt6 6.9 REQUIRED COMPONENTS Core Network Sql Widgets)
 
 qt_standard_project_setup()
 
+add_subdirectory(common)
 add_subdirectory(apps/client)
 add_subdirectory(apps/server)

@@ -5,7 +5,7 @@
 - Date: 2026-09-10
 - Stage: Day 8 active
 - Active goal: Separate the client UI from the application entry point
-- Next action: Commit/push `NetworkClient`, then move the shared frame protocol into `common` and begin server-side architecture separation
+- Next action: Run-test and commit the shared `common/FrameProtocol` wiring, then begin server-side protocol extraction
 
 ## Completed
 
@@ -75,6 +75,10 @@
 - Committed and pushed the protocol helper as `98c0de9`.
 - Added `NetworkClient` to own `QTcpSocket`, asynchronous connection events, connection-state checks, and framed payload writes.
 - Removed direct socket connection and write operations from `main.cpp` and verified a fresh Debug build.
+- Committed and pushed the network client extraction as `7437563`.
+- Moved `frameprotocol.h/.cpp` from `apps/client` into `common`; CMake wiring and runtime verification remain.
+- Added `common/CMakeLists.txt`, loaded the common subdirectory, and linked the common library to both applications.
+- Removed the stale client source paths and verified CMake reconfiguration plus a full Debug build succeed.
 
 ## Known Environment Notes
 
