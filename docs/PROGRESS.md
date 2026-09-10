@@ -5,7 +5,7 @@
 - Date: 2026-09-10
 - Stage: Day 8 active
 - Active goal: Separate the client UI from the application entry point
-- Next action: Commit/push `FrameProtocol`, then create `NetworkClient` and move socket connection/send ownership out of `main.cpp`
+- Next action: Commit/push `NetworkClient`, then move the shared frame protocol into `common` and begin server-side architecture separation
 
 ## Completed
 
@@ -72,6 +72,9 @@
 - Switched the client from a direct `cv::CascadeClassifier` object to `FaceDetector` and committed/pushed it as `c85b130`.
 - Added `FrameProtocol::pack()` for shared length-prefixed packet construction and switched text/JPEG sends to use it.
 - Verified a fresh Debug build after the protocol helper integration.
+- Committed and pushed the protocol helper as `98c0de9`.
+- Added `NetworkClient` to own `QTcpSocket`, asynchronous connection events, connection-state checks, and framed payload writes.
+- Removed direct socket connection and write operations from `main.cpp` and verified a fresh Debug build.
 
 ## Known Environment Notes
 
@@ -153,5 +156,5 @@
 - [x] Move UI construction out of `main.cpp` in small, verified steps.
 - [x] Route button clicks through `MainWindow` signals.
 - [x] Separate camera capture and face detection responsibilities.
-- [ ] Separate client networking and frame-packing responsibilities.
+- [x] Separate client networking and frame-packing responsibilities.
 - [ ] Build, run, commit, and push the Day 8 architecture increment.

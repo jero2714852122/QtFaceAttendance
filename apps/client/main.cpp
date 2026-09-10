@@ -15,13 +15,12 @@
 #include<opencv2/imgproc.hpp>
 #include<vector>
 #include<opencv2/objdetect.hpp>
-#include<QTcpSocket>
 #include<QIODevice>
 #include<QBuffer>
 #include"mainwindow.h"
 #include "cameracontroller.h"
 #include"facedetector.h"
-#include "frameprotocol.h"
+#include"networkclient.h"
 int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
@@ -50,27 +49,22 @@ int main(int argc, char* argv[])
     std::vector<cv::Rect> detectedFaces;
     bool jpegSent=false;
 
-
-    QTcpSocket*attendencSocket=new QTcpSocket(centralWidget);
-    QObject::connect(attendencSocket,&QTcpSocket::connected,statusLabel,
-        [statusLabel,attendencSocket](){
-            statusLabel->setText("状态：已连接服务器");
-        QByteArray payLoad;
-        payLoad.append(FrameProtocol::pack("msg1"));
-        payLoad.append(FrameProtocol::pack("msg2"));
-        attendencSocket->write(payLoad);
+    NetworkClient networkClient;
+    QObject::connect(&networkClient,&NetworkClient::connected,statusLabel,
+[statusLabel,&networkClient](){
+        statusLabel->setText("状态：已连接服务器");
+        networkClient.sendPayload("msg1");
+        networkClient.sendPayload("msg2");
     });
-
-
-    QObject::connect(attendencSocket,&QTcpSocket::errorOccurred,statusLabel,
-        [statusLabel,attendencSocket](){
-        statusLabel->setText("状态：服务器连接失败  "+attendencSocket->errorString());
+    QObject::connect(&networkClient,&NetworkClient::connectionError,statusLabel,
+        [statusLabel](const QString&errMsg){
+        statusLabel->setText("状态：服务器连接失败  "+errMsg);
     });
-    attendencSocket->connectToHost("127.0.0.1",45454);
+    networkClient.connectToServer("127.0.0.1", 45454);
 
     QObject::connect(previewTimer,&QTimer::timeout,cameraPreview,
         [cameraPreview,&camera,statusLabel,&faceDetector,&detectionClock,
-         &detectedFaces,identity,&jpegSent,attendencSocket](){
+         &detectedFaces,identity,&jpegSent,&networkClient](){
         cv::Mat frame;
         if(!camera.read(frame)||frame.empty())
             {
@@ -100,7 +94,7 @@ int main(int argc, char* argv[])
             static_cast<qsizetype>(frame.step),
             QImage::Format_RGB888
             );
-        if(!jpegSent&&attendencSocket->state()==QAbstractSocket::ConnectedState)
+        if(!jpegSent&&networkClient.isConnected())
         {
             QByteArray jpegBytes;
             QBuffer buffer(&jpegBytes);
@@ -110,9 +104,8 @@ int main(int argc, char* argv[])
             QByteArray jpegPayload="JPEG\n";
             jpegPayload.append(jpegBytes);
 
-            QByteArray jpegPacket=FrameProtocol::pack(jpegPayload);
-            attendencSocket->write(jpegPacket);
-            jpegSent=true;
+            if(networkClient.sendPayload(jpegPayload)>=0)
+                jpegSent=true;
         }
 
         cameraPreview->setPixmap(

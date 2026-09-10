@@ -6,6 +6,7 @@ qt_add_executable(face_attendance_client
     cameracontroller.h cameracontroller.cpp
     facedetector.h facedetector.cpp
     frameprotocol.h frameprotocol.cpp
+    networkclient.h networkclient.cpp
 )
 
 target_link_libraries(face_attendance_client
