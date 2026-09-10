@@ -2,10 +2,10 @@
 
 ## Current State
 
-- Date: 2026-09-09
+- Date: 2026-09-10
 - Stage: Day 8 active
 - Active goal: Separate the client UI from the application entry point
-- Next action: Run-test and commit the `CameraController` extraction, then create `FaceDetector`
+- Next action: Commit/push `FrameProtocol`, then create `NetworkClient` and move socket connection/send ownership out of `main.cpp`
 
 ## Completed
 
@@ -68,6 +68,10 @@
 - Verified the signal-based UI still builds and committed/pushed it as `124a0b1`.
 - Added `CameraController` to encapsulate OpenCV camera open, read, release, and cleanup operations.
 - Switched the client from a direct `cv::VideoCapture` object to `CameraController` and verified a fresh Debug build.
+- Added `FaceDetector` to encapsulate Haar model loading and face detection operations.
+- Switched the client from a direct `cv::CascadeClassifier` object to `FaceDetector` and committed/pushed it as `c85b130`.
+- Added `FrameProtocol::pack()` for shared length-prefixed packet construction and switched text/JPEG sends to use it.
+- Verified a fresh Debug build after the protocol helper integration.
 
 ## Known Environment Notes
 
@@ -148,6 +152,6 @@
 - [x] Construct the new window class from `main.cpp` without removing existing features.
 - [x] Move UI construction out of `main.cpp` in small, verified steps.
 - [x] Route button clicks through `MainWindow` signals.
-- [ ] Separate camera capture and face detection responsibilities.
+- [x] Separate camera capture and face detection responsibilities.
 - [ ] Separate client networking and frame-packing responsibilities.
 - [ ] Build, run, commit, and push the Day 8 architecture increment.

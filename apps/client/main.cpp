@@ -17,11 +17,11 @@
 #include<opencv2/objdetect.hpp>
 #include<QTcpSocket>
 #include<QIODevice>
-#include<QDataStream>
 #include<QBuffer>
 #include"mainwindow.h"
 #include "cameracontroller.h"
 #include"facedetector.h"
+#include "frameprotocol.h"
 int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
@@ -56,16 +56,8 @@ int main(int argc, char* argv[])
         [statusLabel,attendencSocket](){
             statusLabel->setText("状态：已连接服务器");
         QByteArray payLoad;
-            auto appendpacket=[](const QByteArray&p){
-                QByteArray packet;
-                QDataStream output(&packet,QIODevice::WriteOnly);
-                output.setByteOrder(QDataStream::BigEndian);
-                output<<quint32(p.size());
-                packet.append(p);
-                return packet;
-        };
-        payLoad.append(appendpacket("msg1"));
-        payLoad.append(appendpacket("msg2"));
+        payLoad.append(FrameProtocol::pack("msg1"));
+        payLoad.append(FrameProtocol::pack("msg2"));
         attendencSocket->write(payLoad);
     });
 
@@ -118,11 +110,7 @@ int main(int argc, char* argv[])
             QByteArray jpegPayload="JPEG\n";
             jpegPayload.append(jpegBytes);
 
-            QByteArray jpegPacket;
-            QDataStream output(&jpegPacket,QIODevice::WriteOnly);
-            output.setByteOrder(QDataStream::BigEndian);
-            output<<quint32(jpegPayload.size());
-            jpegPacket.append(jpegPayload);
+            QByteArray jpegPacket=FrameProtocol::pack(jpegPayload);
             attendencSocket->write(jpegPacket);
             jpegSent=true;
         }
