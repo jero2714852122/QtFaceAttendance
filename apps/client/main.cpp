@@ -12,15 +12,14 @@
 #include<QPixmap>
 #include <QCoreApplication>
 #include <QElapsedTimer>
-#include<opencv2/imgproc.hpp>
 #include<vector>
 #include<opencv2/objdetect.hpp>
 #include<QIODevice>
-#include<QBuffer>
 #include"mainwindow.h"
 #include "cameracontroller.h"
 #include"facedetector.h"
 #include"networkclient.h"
+#include "frameprocessor.h"
 int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
@@ -71,41 +70,31 @@ int main(int argc, char* argv[])
             statusLabel->setText("读取摄像头画面失败");
             return;
         }
-        cv::flip(frame,frame,1);
+        frame=FrameProcessor::mirror(frame);
         if(!detectionClock.isValid() || detectionClock.elapsed() >= 100)
         {
-            cv::Mat grayFrame;
-            cv::cvtColor(frame,grayFrame,cv::COLOR_BGR2GRAY);
-            cv::equalizeHist(grayFrame,grayFrame);
+            cv::Mat grayFrame=FrameProcessor::toGray(frame);
             faceDetector.detect(grayFrame,detectedFaces);
             detectionClock.restart();
             identity->setText(QString("检测到人脸数量：%1").arg(detectedFaces.size()));
         }
-        for(const cv::Rect&face:detectedFaces)
-        {
-            cv::rectangle(frame,face,cv::Scalar(0,255,0),2);
-        }
-
-        cv::cvtColor(frame,frame,cv::COLOR_BGR2RGB);
-        QImage image(
-            frame.data,
-            frame.cols,
-            frame.rows,
-            static_cast<qsizetype>(frame.step),
-            QImage::Format_RGB888
-            );
+        QImage image =
+            FrameProcessor::toPreviewImage(
+                frame,
+                detectedFaces);
         if(!jpegSent&&networkClient.isConnected())
         {
-            QByteArray jpegBytes;
-            QBuffer buffer(&jpegBytes);
-            buffer.open(QIODevice::WriteOnly);
-            image.save(&buffer,"JPG",80);
-
-            QByteArray jpegPayload="JPEG\n";
-            jpegPayload.append(jpegBytes);
-
-            if(networkClient.sendPayload(jpegPayload)>=0)
-                jpegSent=true;
+            QByteArray jpegBytes =
+                FrameProcessor::encodeJpeg(image, 80);
+            if (!jpegBytes.isEmpty())
+            {
+                QByteArray jpegPayload = "JPEG\n";
+                jpegPayload.append(jpegBytes);
+                if (networkClient.sendPayload(jpegPayload) >= 0)
+                {
+                    jpegSent = true;
+                }
+            }
         }
 
         cameraPreview->setPixmap(

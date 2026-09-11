@@ -2,10 +2,10 @@
 
 ## Current State
 
-- Date: 2026-09-10
+- Date: 2026-09-11
 - Stage: Day 8 active
 - Active goal: Separate the client UI from the application entry point
-- Next action: Run-test and commit the shared `common/FrameProtocol` wiring, then begin server-side protocol extraction
+- Next action: Run-test and commit `FrameProcessor`, then replace raw widget access with `MainWindow` update methods
 
 ## Completed
 
@@ -79,6 +79,9 @@
 - Moved `frameprotocol.h/.cpp` from `apps/client` into `common`; CMake wiring and runtime verification remain.
 - Added `common/CMakeLists.txt`, loaded the common subdirectory, and linked the common library to both applications.
 - Removed the stale client source paths and verified CMake reconfiguration plus a full Debug build succeed.
+- Run-tested the shared protocol path and committed/pushed the common-library wiring as `f6f581e`.
+- Added `FrameProcessor` for mirroring, grayscale preparation, preview rendering, and JPEG encoding.
+- Removed direct OpenCV image-transform and `QBuffer`/JPEG encoding details from `main.cpp`; a fresh Debug build succeeds.
 
 ## Known Environment Notes
 
