@@ -2,6 +2,8 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include<QImage>
+#include<QString>
 
 class QLabel;
 class QPushButton;
@@ -13,11 +15,11 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget* parent = nullptr);
 
-    QLabel* cameraPreview() const;
-    QLabel* statusLabel() const;
-    QLabel* identityLabel() const;
-    QPushButton* startButton() const;
-    QPushButton* stopButton() const;
+    void setStatusText(const QString& text);
+    void setFaceCount(int count);
+    void setCameraRunning(bool running);
+    void showPreviewImage(const QImage& image);
+    void resetPreview();
 
 signals:
 
@@ -32,4 +34,4 @@ private:
     QPushButton* stopButton_ = nullptr;
 };
 
-#endif // MAINWINDOW_H
+#endif

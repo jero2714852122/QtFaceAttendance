@@ -5,6 +5,9 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QWidget>
+#include <QImage>
+#include <QPixmap>
+#include <QString>
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
@@ -58,28 +61,27 @@ MainWindow::MainWindow(QWidget* parent)
             emit stopCameraRequested();
         });
 }
-
-QLabel* MainWindow::cameraPreview() const
+void MainWindow::setStatusText(const QString&text)
 {
-    return cameraPreview_;
+    statusLabel_->setText(text);
 }
-
-QLabel* MainWindow::statusLabel() const
+void MainWindow::setFaceCount(int count)
 {
-    return statusLabel_;
+    identityLabel_->setText(QString("检测到人脸数量：%1").arg(count));
 }
-
-QLabel* MainWindow::identityLabel() const
+void MainWindow::setCameraRunning(bool running)
 {
-    return identityLabel_;
+    startButton_->setEnabled(!running);
+    stopButton_->setEnabled(running);
 }
-
-QPushButton* MainWindow::startButton() const
+void MainWindow::showPreviewImage(const QImage&image)
 {
-    return startButton_;
+    cameraPreview_->setPixmap(QPixmap::fromImage(image).scaled(cameraPreview_->size(),
+        Qt::KeepAspectRatio,
+        Qt::FastTransformation));
 }
-
-QPushButton* MainWindow::stopButton() const
+void MainWindow::resetPreview()
 {
-    return stopButton_;
+    cameraPreview_->clear();
+    cameraPreview_->setText("相机预览");
 }

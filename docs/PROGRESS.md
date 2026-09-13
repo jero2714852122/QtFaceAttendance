@@ -2,10 +2,10 @@
 
 ## Current State
 
-- Date: 2026-09-11
+- Date: 2026-09-12
 - Stage: Day 8 active
 - Active goal: Separate the client UI from the application entry point
-- Next action: Run-test and commit `FrameProcessor`, then replace raw widget access with `MainWindow` update methods
+- Next action: Replace raw client widget access with `MainWindow` update methods, remove the temporary getters, then run-test and commit
 
 ## Completed
 
@@ -82,6 +82,8 @@
 - Run-tested the shared protocol path and committed/pushed the common-library wiring as `f6f581e`.
 - Added `FrameProcessor` for mirroring, grayscale preparation, preview rendering, and JPEG encoding.
 - Removed direct OpenCV image-transform and `QBuffer`/JPEG encoding details from `main.cpp`; a fresh Debug build succeeds.
+- Run-tested and committed/pushed the frame processor extraction as `af0a250`.
+- Added initial `MainWindow` methods for status, face count, camera state, preview display, and preview reset; call-site migration remains.
 
 ## Known Environment Notes
 
