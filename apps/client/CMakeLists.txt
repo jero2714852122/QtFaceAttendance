@@ -2,11 +2,12 @@ find_package(OpenCV 4.12 REQUIRED COMPONENTS core imgproc videoio)
 
 qt_add_executable(face_attendance_client
     main.cpp
-    mainwindow.h mainwindow.cpp
-    cameracontroller.h cameracontroller.cpp
-    facedetector.h facedetector.cpp
-    networkclient.h networkclient.cpp
-    frameprocessor.h frameprocessor.cpp
+    ui/mainwindow.h ui/mainwindow.cpp
+    camera/cameracontroller.h camera/cameracontroller.cpp
+    vision/facedetector.h vision/facedetector.cpp
+    network/networkclient.h network/networkclient.cpp
+    vision/frameprocessor.h vision/frameprocessor.cpp
+    controller/attendancecontroller.h controller/attendancecontroller.cpp
 )
 
 target_link_libraries(face_attendance_client
@@ -21,6 +22,7 @@ target_link_libraries(face_attendance_client
 target_include_directories(face_attendance_client
     PRIVATE
         ${OpenCV_INCLUDE_DIRS}
+        ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 add_custom_command(TARGET face_attendance_client POST_BUILD
