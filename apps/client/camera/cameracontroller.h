@@ -15,5 +15,4 @@ public:
 private:
     cv::VideoCapture capture_;
 };
-
 #endif
