@@ -1,7 +1,10 @@
 #pragma once
 
+#include <QByteArray>
 #include <QObject>
+#include <QString>
 
+class DatabaseManager;
 class Server;
 class ServerWindow;
 
@@ -13,7 +16,10 @@ public:
     ServerController(
         Server& server,
         ServerWindow& window,
+        DatabaseManager& database,
         QObject* parent = nullptr);
+
+    bool initializeDatabase();
 
 private slots:
     void onClientConnected(
@@ -32,4 +38,5 @@ private slots:
 private:
     Server& server_;
     ServerWindow& window_;
+    DatabaseManager& database_;
 };

@@ -9,6 +9,7 @@ qt_add_executable(face_attendance_server
     ui/serverwindow.h
     ui/serverwindow.cpp
     controller/servercontroller.h controller/servercontroller.cpp
+    database/databasemanager.h database/databasemanager.cpp
 )
 
 target_link_libraries(face_attendance_server

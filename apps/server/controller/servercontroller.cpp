@@ -1,18 +1,21 @@
 #include "servercontroller.h"
 
+#include "database/databasemanager.h"
 #include "network/server.h"
 #include "ui/serverwindow.h"
 
-#include <QByteArray>
-#include <QString>
+#include <QCoreApplication>
+#include <QDir>
 
 ServerController::ServerController(
     Server& server,
     ServerWindow& window,
+    DatabaseManager& database,
     QObject* parent)
     : QObject(parent)
     , server_(server)
     , window_(window)
+    , database_(database)
 {
     QObject::connect(
         &server_,
@@ -49,6 +52,46 @@ ServerController::ServerController(
         &Server::messageReceived,
         this,
         &ServerController::onMessageReceived);
+}
+
+bool ServerController::initializeDatabase()
+{
+    const QString dataDirectory =
+        QCoreApplication::applicationDirPath()
+        + "/data";
+
+    if (!QDir().mkpath(dataDirectory))
+    {
+        window_.appendStatusText(
+            "数据库目录创建失败："
+            + dataDirectory);
+        return false;
+    }
+
+    const QString databasePath =
+        dataDirectory
+        + "/attendance.db";
+
+    if (!database_.open(databasePath))
+    {
+        window_.appendStatusText(
+            "数据库打开失败："
+            + database_.lastError());
+        return false;
+    }
+
+    if (!database_.initializeSchema())
+    {
+        window_.appendStatusText(
+            "数据库表初始化失败："
+            + database_.lastError());
+        return false;
+    }
+
+    window_.appendStatusText(
+        "数据库初始化成功："
+        + databasePath);
+    return true;
 }
 
 void ServerController::onClientConnected(
