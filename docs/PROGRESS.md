@@ -2,10 +2,28 @@
 
 ## Current State
 
-- Date: 2026-09-12
-- Stage: Day 8 active
-- Active goal: Separate the client UI from the application entry point
-- Next action: Replace raw client widget access with `MainWindow` update methods, remove the temporary getters, then run-test and commit
+- Date: 2026-09-22
+- Stage: Day 9 active (SQLite employee registration and query)
+- Active goal: Finish the server employee-management module
+- Last verified: the server builds, binds `127.0.0.1:45454` exactly once, the button row is horizontal, and the employee list renders a stored row
+- Pending release step: the server employee-management change set is verified but not committed or pushed
+- Next action: Replace the raw SQLite duplicate-key message with a friendly employee-number check, then commit and push the server employee-management increment before announcing Day 10
+
+## Day 9 Work In Progress
+
+- Day 8 was completed and published as `f82c95c`, `6e2eb60`, and `9468fc5`; the earlier "Day 8 not committed" note was stale.
+- Added `DatabaseManager` for the SQLite connection named `face_attendance_connection`.
+- Created the `employees`, `face_templates`, and `attendance_records` tables and published the schema as `21510d2`.
+- Added the `Employee` struct and `EmployeeRepository` with parameterized `addEmployee`, `findByEmployeeNo`, and `findAll` queries.
+- Added the server employee form, employee list, add/refresh buttons, and the controller wiring behind them.
+- Fixed the button row: the buttons were added to a `QHBoxLayout` that was never inserted into the window layout, so no layout managed them.
+- Fixed a duplicated `layout->addWidget(statusLabel_)` call that made the vertical layout reserve two slots for a single label.
+- Removed a second unconditional `server.listen()` call that produced "The bound address is already in use" and also bypassed the database failure check.
+- Separated the append-only event log from the current employee count by adding `ServerWindow::setEmployeeCount()`.
+- Verified at runtime with UI Automation: buttons share one row, the count label and list are visible, and the list shows an existing employee row.
+- Verified the empty-form rejection in the running server: the status area shows "员工编号和姓名不能为空" and no row is added.
+- Verified the duplicate `employee_no` rejection in the running server: SQLite reports the `UNIQUE` constraint failure and no row is added.
+- Found that the duplicate case currently shows the raw SQLite text and that `EmployeeRepository::findByEmployeeNo()` is still unused.
 
 ## Completed
 
@@ -88,6 +106,7 @@
 ## Known Environment Notes
 
 - Use the `Qt 6.9.1 (msvc2022_64)` kit for this project.
+- The server executable in use is `build/Qt_6_9_1_msvc2022_64/Debug/face_attendance_server.exe`; the older `build/Debug/face_attendance_server.exe` is stale and must not be run.
 - Use `Ctrl+B` to build and `Ctrl+R` to run.
 - Use `F5` to build and debug; CDB is configured and verified.
 - Qt Creator 20.0.1 is installed under `D:/tools/QT/Tools/QtCreator`.
@@ -109,6 +128,8 @@
 - How a header declaration differs from a linked library implementation.
 - How content alignment differs from assigning a main-window central widget.
 - The exact destruction sequence after `app.exec()` returns.
+- Why `new QHBoxLayout(centralWidget)` and `parentLayout->addLayout(childLayout)` are not interchangeable.
+- Why a layout with no parent widget cannot manage its child widget geometry.
 
 ## Day 2 Checklist
 
@@ -166,4 +187,16 @@
 - [x] Route button clicks through `MainWindow` signals.
 - [x] Separate camera capture and face detection responsibilities.
 - [x] Separate client networking and frame-packing responsibilities.
-- [ ] Build, run, commit, and push the Day 8 architecture increment.
+- [x] Build, run, commit, and push the Day 8 architecture increment.
+
+## Day 9 Checklist
+
+- [x] Open a SQLite database from the application directory.
+- [x] Create the `employees`, `face_templates`, and `attendance_records` tables.
+- [x] Insert an employee through a parameterized query.
+- [x] List employees in the server window.
+- [x] Repair the employee-management layout and the duplicate listening call.
+- [x] Confirm the empty-field rejection in the running server.
+- [x] Confirm the duplicate `employee_no` rejection in the running server.
+- [ ] Add a friendly duplicate-employee-number check before the insert.
+- [ ] Commit and push the server employee-management increment.

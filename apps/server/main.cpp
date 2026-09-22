@@ -20,11 +20,19 @@ int main(int argc, char* argv[])
         database,
         &window);
 
-    controller.initializeDatabase();
+    if (!controller.initializeDatabase())
+    {
+        window.appendStatusText(
+            "数据库不可用，服务器未启动");
+    }
+    else
+    {
+        controller.loadEmployees();
 
-    server.listen(
-        QHostAddress::LocalHost,
-        45454);
+        server.listen(
+            QHostAddress::LocalHost,
+            45454);
+    }
 
     window.show();
 

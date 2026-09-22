@@ -193,3 +193,15 @@ QString DatabaseManager::lastError() const
 {
     return lastError_;
 }
+//对原生api做个封装，防止如果不存在连接名新注册一个无效连接
+QSqlDatabase DatabaseManager::database() const
+{
+    if (!QSqlDatabase::contains(connectionName_))
+    {
+        return {};
+    }
+
+    return QSqlDatabase::database(
+        connectionName_,
+        false);
+}

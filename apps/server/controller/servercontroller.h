@@ -3,6 +3,7 @@
 #include <QByteArray>
 #include <QObject>
 #include <QString>
+#include "database/employeerepository.h"
 
 class DatabaseManager;
 class Server;
@@ -20,7 +21,7 @@ public:
         QObject* parent = nullptr);
 
     bool initializeDatabase();
-
+    void loadEmployees();
 private slots:
     void onClientConnected(
         const QString& peer);
@@ -35,8 +36,19 @@ private slots:
         const QString& peer,
         const QByteArray& message);
 
+    void onAddEmployee(
+        const QString& employeeNo,
+        const QString& name,
+        const QString& department);
+
+    void onRefreshEmployees();
+
+    void onDeleteEmployee(
+        qint64 id);
+
 private:
     Server& server_;
     ServerWindow& window_;
     DatabaseManager& database_;
+    EmployeeRepository employeeRepository_;
 };

@@ -3,7 +3,7 @@
 #include "database/databasemanager.h"
 #include "network/server.h"
 #include "ui/serverwindow.h"
-
+#include "database/employeerepository.h"
 #include <QCoreApplication>
 #include <QDir>
 
@@ -16,18 +16,19 @@ ServerController::ServerController(
     , server_(server)
     , window_(window)
     , database_(database)
+    ,employeeRepository_(database)
 {
     QObject::connect(
         &server_,
         &Server::listeningStarted,
         &window_,
-        &ServerWindow::setStatusText);
+        &ServerWindow::appendStatusText);
 
     QObject::connect(
         &server_,
         &Server::listeningError,
         &window_,
-        &ServerWindow::setStatusText);
+        &ServerWindow::appendStatusText);
 
     QObject::connect(
         &server_,
@@ -52,6 +53,24 @@ ServerController::ServerController(
         &Server::messageReceived,
         this,
         &ServerController::onMessageReceived);
+
+    QObject::connect(
+        &window_,
+        &ServerWindow::addEmployeeRequested,
+        this,
+        &ServerController::onAddEmployee);
+
+    QObject::connect(
+        &window_,
+        &ServerWindow::refreshEmployeesRequested,
+        this,
+        &ServerController::onRefreshEmployees);
+
+    QObject::connect(
+        &window_,
+        &ServerWindow::deleteEmployeeRequested,
+        this,
+        &ServerController::onDeleteEmployee);
 }
 
 bool ServerController::initializeDatabase()
@@ -124,4 +143,100 @@ void ServerController::onMessageReceived(
         + " 收到完整消息，字节数："
         + QString::number(
             message.size()));
+}
+
+void ServerController::onAddEmployee(
+    const QString& employeeNo,
+    const QString& name,
+    const QString& department)
+{
+    const QString cleanEmployeeNo =
+        employeeNo.trimmed();
+
+    const QString cleanName =
+        name.trimmed();
+
+    const QString cleanDepartment =
+        department.trimmed();
+
+    if (cleanEmployeeNo.isEmpty()
+        || cleanName.isEmpty())
+    {
+        window_.appendStatusText(
+            "员工编号和姓名不能为空");
+
+        return;
+    }
+    Employee existing;
+
+    if (employeeRepository_.findByEmployeeNo(
+            cleanEmployeeNo,
+            existing))
+    {
+        window_.appendStatusText(
+            "新增员工失败：工号 "
+            + cleanEmployeeNo
+            + " 已存在");
+
+        return;
+    }
+    if (!employeeRepository_.addEmployee(
+            cleanEmployeeNo,
+            cleanName,
+            cleanDepartment))
+    {
+        window_.appendStatusText(
+            "新增员工失败："
+            + employeeRepository_.lastError());
+
+        return;
+    }
+
+    window_.appendStatusText(
+        "员工新增成功："
+        + cleanName);
+
+    loadEmployees();
+}
+
+void ServerController::onRefreshEmployees()
+{
+    loadEmployees();
+}
+
+void ServerController::onDeleteEmployee(
+    qint64 id)
+{
+    if (!employeeRepository_.removeById(id))
+    {
+        window_.appendStatusText(
+            "删除员工失败："
+            + employeeRepository_.lastError());
+
+        return;
+    }
+
+    window_.appendStatusText(
+        "员工删除成功");
+
+    loadEmployees();
+}
+
+void ServerController::loadEmployees()
+{
+    QList<Employee> employees;
+
+    if (!employeeRepository_.findAll(
+            employees))
+    {
+        window_.appendStatusText(
+            "查询员工失败："
+            + employeeRepository_.lastError());
+        return;
+    }
+
+    window_.setEmployees(employees);
+
+    window_.setEmployeeCount(
+        employees.size());
 }

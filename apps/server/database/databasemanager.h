@@ -1,5 +1,5 @@
 #pragma once
-
+#include <QSqlDatabase>
 #include <QString>
 class DatabaseManager
 {
@@ -18,6 +18,8 @@ public:
     void close();
 
     bool isOpen() const;
+
+    QSqlDatabase database() const;
 
     QString lastError() const;
 
