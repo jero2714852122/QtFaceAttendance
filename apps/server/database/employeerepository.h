@@ -17,6 +17,10 @@ public:
         const QString& employeeNo,
         const QString& name,
         const QString& department);
+    bool updateEmployee(
+        qint64 id,
+        const QString& name,
+        const QString& department);
 
     bool removeById(
         qint64 id);

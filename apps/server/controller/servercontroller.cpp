@@ -71,6 +71,12 @@ ServerController::ServerController(
         &ServerWindow::deleteEmployeeRequested,
         this,
         &ServerController::onDeleteEmployee);
+
+    QObject::connect(
+        &window_,
+        &ServerWindow::updateEmployeeRequested,
+        this,
+        &ServerController::onUpdateEmployee);
 }
 
 bool ServerController::initializeDatabase()
@@ -218,6 +224,44 @@ void ServerController::onDeleteEmployee(
 
     window_.appendStatusText(
         "员工删除成功");
+
+    loadEmployees();
+}
+
+void ServerController::onUpdateEmployee(
+    qint64 id,
+    const QString& name,
+    const QString& department)
+{
+    const QString cleanName =
+        name.trimmed();
+
+    const QString cleanDepartment =
+        department.trimmed();
+
+    if (cleanName.isEmpty())
+    {
+        window_.appendStatusText(
+            "姓名不能为空");
+
+        return;
+    }
+
+    if (!employeeRepository_.updateEmployee(
+            id,
+            cleanName,
+            cleanDepartment))
+    {
+        window_.appendStatusText(
+            "员工更新失败："
+            + employeeRepository_.lastError());
+
+        return;
+    }
+
+    window_.appendStatusText(
+        "员工更新成功："
+        + cleanName);
 
     loadEmployees();
 }

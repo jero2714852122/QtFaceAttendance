@@ -39,6 +39,10 @@ signals:
     void refreshEmployeesRequested();
     void deleteEmployeeRequested(
         qint64 id);
+    void updateEmployeeRequested(
+        qint64 id,
+        const QString& name,
+        const QString& department);
 protected:
     bool eventFilter(
         QObject* watched,
@@ -53,4 +57,5 @@ private:
     QPushButton* addButton_ = nullptr;
     QPushButton* refreshButton_ = nullptr;
     QPushButton* deleteButton_ = nullptr;
+    QPushButton* updateButton_ = nullptr;
 };

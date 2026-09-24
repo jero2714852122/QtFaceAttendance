@@ -46,6 +46,11 @@ private slots:
     void onDeleteEmployee(
         qint64 id);
 
+    void onUpdateEmployee(
+        qint64 id,
+        const QString& name,
+        const QString& department);
+
 private:
     Server& server_;
     ServerWindow& window_;

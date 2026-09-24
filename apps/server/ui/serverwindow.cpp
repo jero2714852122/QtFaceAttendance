@@ -82,16 +82,14 @@ ServerWindow::ServerWindow(
         new QPushButton(
             "删除员工",
             centralWidget);
+    updateButton_ =
+        new QPushButton(
+            "保存修改",
+            centralWidget);
+    updateButton_->setEnabled(false);
     deleteButton_->setEnabled(false);
 
-    QObject::connect(
-        employeeList_,
-        &QListWidget::itemSelectionChanged,
-        this,
-        [this]() {
-            deleteButton_->setEnabled(
-                employeeList_->currentItem() != nullptr);
-        });
+
 
     buttonLayout->addWidget(
         addButton_);
@@ -101,6 +99,9 @@ ServerWindow::ServerWindow(
 
     buttonLayout->addWidget(
         deleteButton_);
+
+    buttonLayout->addWidget(
+        updateButton_);
 
     layout->addLayout(
         buttonLayout);
@@ -117,7 +118,40 @@ ServerWindow::ServerWindow(
         new QListWidget(centralWidget);
 
     employeeList_->setAlternatingRowColors(true);
+    QObject::connect(
+        employeeList_,
+        &QListWidget::itemSelectionChanged,
+        this,
+        [this]() {
+            QListWidgetItem* current =
+                employeeList_->currentItem();
 
+            const bool hasSelection =
+                current != nullptr;
+
+            deleteButton_->setEnabled(hasSelection);
+            updateButton_->setEnabled(hasSelection);
+
+            // 选中员工后工号只读：工号是业务主键，不允许修改。
+            employeeNoEdit_->setReadOnly(hasSelection);
+
+            if (!hasSelection)
+            {
+                employeeNoEdit_->clear();
+                nameEdit_->clear();
+                departmentEdit_->clear();
+
+                return;
+            }
+
+            const Employee employee =
+                current->data(Qt::UserRole)
+                    .value<Employee>();
+
+            employeeNoEdit_->setText(employee.employeeNo);
+            nameEdit_->setText(employee.name);
+            departmentEdit_->setText(employee.department);
+        });
     layout->addWidget(
         employeeList_,
         1);
@@ -157,9 +191,11 @@ ServerWindow::ServerWindow(
                 return;
             }
 
-            const qint64 id =
+            const Employee employee =
                 current->data(Qt::UserRole)
-                    .toLongLong();
+                    .value<Employee>();
+
+            const qint64 id = employee.id;
 
             const QMessageBox::StandardButton answer =
                 QMessageBox::question(
@@ -176,10 +212,33 @@ ServerWindow::ServerWindow(
             {
                 return;
             }
-
             emit deleteEmployeeRequested(id);
         });
+    QObject::connect(
+        updateButton_,
+        &QPushButton::clicked,
+        this,
+        [this]() {
+            QListWidgetItem* current =
+                employeeList_->currentItem();
 
+            if (!current)
+            {
+                appendStatusText(
+                    "请先在列表中选择一名员工");
+
+                return;
+            }
+
+            const Employee employee =
+                current->data(Qt::UserRole)
+                    .value<Employee>();
+
+            emit updateEmployeeRequested(
+                employee.id,
+                nameEdit_->text(),
+                departmentEdit_->text());
+        });
     QObject::connect(
         refreshButton_,
         &QPushButton::clicked,
@@ -248,7 +307,7 @@ void ServerWindow::setEmployees(
 
         item->setData(
             Qt::UserRole,
-            employee.id);
+            QVariant::fromValue(employee));
 
         employeeList_->addItem(item);
     }

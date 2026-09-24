@@ -86,6 +86,53 @@ bool EmployeeRepository::removeById(
     return true;
 }
 
+bool EmployeeRepository::updateEmployee(
+    qint64 id,
+    const QString& name,
+    const QString& department)
+{
+    lastError_.clear();
+
+    QSqlQuery query(
+        databaseManager_.database());
+
+    query.prepare(
+        "UPDATE employees "
+        "SET name = :name, "
+        "department = :department "
+        "WHERE id = :id");
+
+    query.bindValue(
+        ":name",
+        name);
+
+    query.bindValue(
+        ":department",
+        department);
+
+    query.bindValue(
+        ":id",
+        id);
+
+    if (!query.exec())
+    {
+        lastError_ =
+            query.lastError().text();
+
+        return false;
+    }
+
+    if (query.numRowsAffected() <= 0)
+    {
+        lastError_ =
+            "未找到该员工，更新未生效";
+
+        return false;
+    }
+
+    return true;
+}
+
 bool EmployeeRepository::findByEmployeeNo(
     const QString& employeeNo,
     Employee& employee)

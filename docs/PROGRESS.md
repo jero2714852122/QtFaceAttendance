@@ -2,12 +2,19 @@
 
 ## Current State
 
-- Date: 2026-09-22
-- Stage: Day 9 active (SQLite employee registration and query)
-- Active goal: Finish the server employee-management module
-- Last verified: the server builds, binds `127.0.0.1:45454` exactly once, the button row is horizontal, and the employee list renders a stored row
-- Pending release step: the server employee-management change set is verified but not committed or pushed
-- Next action: Replace the raw SQLite duplicate-key message with a friendly employee-number check, then commit and push the server employee-management increment before announcing Day 10
+- Date: 2026-09-23
+- Stage: Day 10 active (face recognition)
+- Active goal: Recognize a registered employee from a camera frame and report the similarity against a documented threshold
+- Last verified: Day 9 employee management works end to end, including registration, listing, deletion, and update of name and department
+- Next action: Wire OpenCV into the server target, load the YuNet and SFace models at startup, and report model-loading failures in the status area
+
+## Day 10 Preparation Notes
+
+- The official OpenCV 4.12 Windows package does **not** contain the contrib `face` module, so `cv::face::LBPHFaceRecognizer` is unavailable.
+- `cv::FaceDetectorYN` and `cv::FaceRecognizerSF` live in the main `objdetect` module and are present in the installed `opencv_world4120` build.
+- YuNet model `assets/face_detection_yunet_2023mar.onnx` and SFace model `assets/face_recognition_sface_2021dec.onnx` were downloaded from the official OpenCV Zoo.
+- Chosen route: YuNet for detection, SFace for embeddings, cosine similarity against templates stored in `face_templates`, with the documented SFace threshold of 0.363.
+- Recognition runs on the server: the client keeps sending JPEG frames, and the server detects, extracts the embedding, and compares it against the database.
 
 ## Day 9 Work In Progress
 
@@ -24,6 +31,12 @@
 - Verified the empty-form rejection in the running server: the status area shows "员工编号和姓名不能为空" and no row is added.
 - Verified the duplicate `employee_no` rejection in the running server: SQLite reports the `UNIQUE` constraint failure and no row is added.
 - Found that the duplicate case currently shows the raw SQLite text and that `EmployeeRepository::findByEmployeeNo()` is still unused.
+- Added a friendly duplicate-employee-number check in `ServerController::onAddEmployee()` using `EmployeeRepository::findByEmployeeNo()`.
+- Added `EmployeeRepository::removeById()` and a delete button with a confirmation dialog.
+- Added `EmployeeRepository::updateEmployee()`, an update button, and form prefill on row selection, completing the four CRUD operations.
+- Learned that an employee number is a business key and must not be editable, and expressed that constraint in the repository method signature.
+- Stored the whole `Employee` record in each list item through `QVariant::fromValue()` so the user interface never has to parse its own display text.
+- Diagnosed a silent `itemSelectionChanged` failure: the connection was made 58 lines before the `QListWidget` was created, so `QObject::connect` received a null sender and only emitted `invalid nullptr parameter` at runtime.
 
 ## Completed
 
@@ -198,5 +211,18 @@
 - [x] Repair the employee-management layout and the duplicate listening call.
 - [x] Confirm the empty-field rejection in the running server.
 - [x] Confirm the duplicate `employee_no` rejection in the running server.
-- [ ] Add a friendly duplicate-employee-number check before the insert.
-- [ ] Commit and push the server employee-management increment.
+- [x] Add a friendly duplicate-employee-number check before the insert.
+- [x] Commit and push the server employee-management increment as `0384f8e`.
+- [ ] Commit and push the update feature and the two ONNX model files.
+
+## Day 10 Checklist
+
+- [ ] Learn why face detection is not face recognition.
+- [ ] Compare the LBPH, YuNet plus SFace, and custom ONNX routes and pick one.
+- [ ] Decide whether recognition runs on the client or on the server.
+- [ ] Link OpenCV into the server target and copy the models beside the executable.
+- [ ] Load both models at startup and report failures in the status area.
+- [ ] Detect a face in a JPEG frame and produce its alignment.
+- [ ] Extract a 128-dimensional SFace embedding.
+- [ ] Register a face template for an employee.
+- [ ] Compare a new embedding against the stored templates with a documented threshold.
