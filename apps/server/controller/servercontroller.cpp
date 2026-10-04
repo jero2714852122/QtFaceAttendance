@@ -284,3 +284,33 @@ void ServerController::loadEmployees()
     window_.setEmployeeCount(
         employees.size());
 }
+bool ServerController::initializeVision()
+{
+    const QString modelDirectory =
+        QCoreApplication::applicationDirPath()
+        + "/models";
+
+    const QString detectorPath =
+        modelDirectory
+        + "/face_detection_yunet_2023mar.onnx";
+
+    const QString recognizerPath =
+        modelDirectory
+        + "/face_recognition_sface_2021dec.onnx";
+
+    if (!faceEngine_.load(
+            detectorPath,
+            recognizerPath))
+    {
+        window_.appendStatusText(
+            "人脸模型加载失败："
+            + faceEngine_.lastError());
+
+        return false;
+    }
+
+    window_.appendStatusText(
+        "人脸模型加载成功");
+
+    return true;
+}

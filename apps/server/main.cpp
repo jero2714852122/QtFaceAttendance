@@ -25,6 +25,11 @@ int main(int argc, char* argv[])
         window.appendStatusText(
             "数据库不可用，服务器未启动");
     }
+    else if (!controller.initializeVision())
+    {
+        window.appendStatusText(
+            "人脸模型不可用，服务器未启动");
+    }
     else
     {
         controller.loadEmployees();

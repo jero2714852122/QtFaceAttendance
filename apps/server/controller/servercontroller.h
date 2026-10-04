@@ -4,7 +4,7 @@
 #include <QObject>
 #include <QString>
 #include "database/employeerepository.h"
-
+#include "vision/faceengine.h"
 class DatabaseManager;
 class Server;
 class ServerWindow;
@@ -22,6 +22,7 @@ public:
 
     bool initializeDatabase();
     void loadEmployees();
+    bool initializeVision();
 private slots:
     void onClientConnected(
         const QString& peer);
@@ -56,4 +57,5 @@ private:
     ServerWindow& window_;
     DatabaseManager& database_;
     EmployeeRepository employeeRepository_;
+    FaceEngine faceEngine_;
 };
