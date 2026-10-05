@@ -6,27 +6,49 @@ bool FaceEngine::load(
 {
     lastError_.clear();
 
-    detector_ = cv::FaceDetectorYN::create(
-        detectorModelPath.toStdString(),
-        "",
-        cv::Size(320, 320));
-
-    if (detector_.empty())
+    try
+    {
+        detector_ = cv::FaceDetectorYN::create(
+            detectorModelPath.toStdString(),
+            "",
+            cv::Size(320, 320));
+    }
+    catch (const cv::Exception& error)
     {
         lastError_ =
-            "YuNet 检测模型加载失败：" + detectorModelPath;
+            "YuNet 检测模型加载失败："
+            + QString::fromStdString(error.msg);
 
         return false;
     }
 
-    recognizer_ = cv::FaceRecognizerSF::create(
-        recognizerModelPath.toStdString(),
-        "");
+    if (detector_.empty())
+    {
+        lastError_ =
+            "YuNet 检测模型加载失败：返回了空指针";
+
+        return false;
+    }
+
+    try
+    {
+        recognizer_ = cv::FaceRecognizerSF::create(
+            recognizerModelPath.toStdString(),
+            "");
+    }
+    catch (const cv::Exception& error)
+    {
+        lastError_ =
+            "SFace 识别模型加载失败："
+            + QString::fromStdString(error.msg);
+
+        return false;
+    }
 
     if (recognizer_.empty())
     {
         lastError_ =
-            "SFace 识别模型加载失败：" + recognizerModelPath;
+            "SFace 识别模型加载失败：返回了空指针";
 
         return false;
     }
