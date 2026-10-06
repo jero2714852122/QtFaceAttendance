@@ -58,4 +58,5 @@ private:
     DatabaseManager& database_;
     EmployeeRepository employeeRepository_;
     FaceEngine faceEngine_;
+    cv::Mat lastEmbedding_;
 };

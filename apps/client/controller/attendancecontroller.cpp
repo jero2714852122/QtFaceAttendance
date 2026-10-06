@@ -129,7 +129,8 @@ void AttendanceController::processFrame()
             detectedFaces_);
 
     if (!jpegSent_ &&
-        networkClient_.isConnected())
+        networkClient_.isConnected() &&
+        !detectedFaces_.empty())
     {
         QByteArray jpegBytes =
             FrameProcessor::encodeJpeg(

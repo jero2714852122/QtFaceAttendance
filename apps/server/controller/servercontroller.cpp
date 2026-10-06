@@ -147,8 +147,67 @@ void ServerController::onMessageReceived(
     window_.appendStatusText(
         peer
         + " 收到完整消息，字节数："
-        + QString::number(
-            message.size()));
+        + QString::number(message.size()));
+
+    if (!message.startsWith("JPEG\n"))
+    {
+        return;
+    }
+
+    std::vector<FaceEngine::Face> faces;
+
+    if (!faceEngine_.analyzeJpeg(
+            message.mid(5),
+            faces))
+    {
+        window_.appendStatusText(
+            "人脸分析失败："
+            + faceEngine_.lastError());
+
+        return;
+    }
+
+    if (faces.empty())
+    {
+        window_.appendStatusText(
+            "图像中未检测到人脸");
+
+        return;
+    }
+
+    const cv::Mat& embedding =
+        faces.front().embedding;
+
+    window_.appendStatusText(
+        QString("检测到人脸：位置(%1, %2)，尺寸 %3x%4，特征维度 %5x%6")
+            .arg(faces.front().box.x)
+            .arg(faces.front().box.y)
+            .arg(faces.front().box.width)
+            .arg(faces.front().box.height)
+            .arg(embedding.rows)
+            .arg(embedding.cols));
+
+    window_.appendStatusText(
+        QString("特征前 4 个值：%1, %2, %3, %4")
+            .arg(embedding.at<float>(0, 0), 0, 'f', 4)
+            .arg(embedding.at<float>(0, 1), 0, 'f', 4)
+            .arg(embedding.at<float>(0, 2), 0, 'f', 4)
+            .arg(embedding.at<float>(0, 3), 0, 'f', 4));
+
+    if (!lastEmbedding_.empty())
+    {
+        window_.appendStatusText(
+            QString("与上一帧的相似度：%1（判定阈值 0.363）")
+                .arg(
+                    faceEngine_.similarity(
+                        lastEmbedding_,
+                        embedding),
+                    0,
+                    'f',
+                    4));
+    }
+
+    lastEmbedding_ = embedding.clone();
 }
 
 void ServerController::onAddEmployee(
