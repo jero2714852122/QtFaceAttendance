@@ -2,11 +2,22 @@
 
 ## Current State
 
-- Date: 2026-09-23
-- Stage: Day 10 active (face recognition)
-- Active goal: Recognize a registered employee from a camera frame and report the similarity against a documented threshold
-- Last verified: Day 9 employee management works end to end, including registration, listing, deletion, and update of name and department
-- Next action: Wire OpenCV into the server target, load the YuNet and SFace models at startup, and report model-loading failures in the status area
+- Date: 2026-10-08
+- Stage: Day 10 essentially complete; Day 11 is next
+- Active goal: Recognize a registered employee from a camera frame and gate the result on the documented 0.363 cosine threshold
+- Last verified: registration, persistence, and recognition all work end to end, and the client now streams frames instead of sending one
+- Next action: Announce Day 11, then write a rate-limited row into `attendance_records` and send the recognition result back to the client
+- Pending release step: the Day 10 change set is committed locally but not pushed
+
+## Day 10 Findings
+
+- The system has two independent thresholds. The detector score threshold decides "is this a face"; the cosine threshold decides "is this the same person". Raising either one causes misses, lowering either one causes false positives, and they trade off different failures.
+- YuNet's default detector score threshold of 0.9 dropped a face rotated by 15 degrees entirely. Measured at 0.7, the same image is detected, so both the client and the server use 0.7.
+- Same-face embeddings scored 0.9428 across a 5 degree rotation, and a different person scored 0.1303, which confirms the 0.363 threshold sits in a useful place.
+- The database round trip for a template (float matrix to BLOB and back) was measured at 1.0000 for an identical frame, so serialization is lossless.
+- Frame uploads are sampled every 500 ms instead of every preview tick, and the server logs one line per result change instead of one line per frame.
+- Known issue for Day 12: the client's "face detection model failed to load" status is overwritten by a later network status message.
+- Cleanup deferred to Day 13: `FrameProcessor::toGray()` is now dead code, `assets/haarcascade_frontalface_default.xml` is retired, and the client's `models` directory still carries copies it no longer uses.
 
 ## Day 10 Preparation Notes
 
@@ -217,12 +228,17 @@
 
 ## Day 10 Checklist
 
-- [ ] Learn why face detection is not face recognition.
-- [ ] Compare the LBPH, YuNet plus SFace, and custom ONNX routes and pick one.
-- [ ] Decide whether recognition runs on the client or on the server.
-- [ ] Link OpenCV into the server target and copy the models beside the executable.
-- [ ] Load both models at startup and report failures in the status area.
-- [ ] Detect a face in a JPEG frame and produce its alignment.
-- [ ] Extract a 128-dimensional SFace embedding.
-- [ ] Register a face template for an employee.
-- [ ] Compare a new embedding against the stored templates with a documented threshold.
+- [x] Learn why face detection is not face recognition.
+- [x] Compare the LBPH, YuNet plus SFace, and custom ONNX routes and pick one.
+- [x] Decide whether recognition runs on the client or on the server.
+- [x] Link OpenCV into the server target and copy the models beside the executable.
+- [x] Load both models at startup and report failures in the status area.
+- [x] Detect a face in a JPEG frame and produce its alignment.
+- [x] Extract a 128-dimensional SFace embedding.
+- [x] Register a face template for an employee.
+- [x] Compare a new embedding against the stored templates with a documented threshold.
+- [x] Handle a missing model file without aborting the application.
+- [x] Store and reload a template through the database without losing precision.
+- [x] Replace the client's Haar detector with YuNet so both sides judge faces the same way.
+- [x] Stream frames on an interval instead of sending a single frame per camera session.
+- [ ] Review the client's model-load failure message so it cannot be overwritten.
