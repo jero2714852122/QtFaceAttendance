@@ -58,6 +58,8 @@ private slots:
         qint64 id);
 
 private:
+    QString describeRecognition(
+        const cv::Mat& embedding);
     Server& server_;
     ServerWindow& window_;
     DatabaseManager& database_;
@@ -66,4 +68,6 @@ private:
     cv::Mat lastEmbedding_;
     FaceTemplateRepository faceTemplateRepository_;
     QList<FaceTemplate> templates_;
+    QString lastRecognitionResult_;
+
 };

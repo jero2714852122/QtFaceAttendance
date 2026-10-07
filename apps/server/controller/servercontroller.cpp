@@ -138,6 +138,12 @@ void ServerController::onClientDisconnected(
 {
     window_.appendStatusText(
         "客户端已断开：" + peer);
+
+    // 客户端换了，上一次的识别结果和那一帧的人脸都不再代表当前画面。
+    // 不清掉的话，客户端重连后画面没变，日志会漏掉这次状态刷新；
+    // 而且"登记人脸"有可能把上一台机器留下的人脸登记进去。
+    lastRecognitionResult_.clear();
+    lastEmbedding_ = cv::Mat();
 }
 
 void ServerController::onClientError(
@@ -151,14 +157,15 @@ void ServerController::onMessageReceived(
     const QString& peer,
     const QByteArray& message)
 {
-    window_.appendStatusText(
-        peer
-        + " 收到完整消息，字节数："
-        + QString::number(message.size()));
-
     // 协议分流：JPEG\n 开头的是图像帧，其他的是文本控制消息。
+    // 图像帧每秒来两帧，不能按帧记日志，所以这里不打印字节数。
     if (!message.startsWith("JPEG\n"))
     {
+        window_.appendStatusText(
+            peer
+            + " 收到完整消息，字节数："
+            + QString::number(message.size()));
+
         return;
     }
 
@@ -175,46 +182,53 @@ void ServerController::onMessageReceived(
         return;
     }
 
+    QString result;
+
     if (faces.empty())
     {
-        window_.appendStatusText(
-            "图像中未检测到人脸");
-
-        return;
+        result = "未检测到人脸";
     }
-
-    // 一张画面里可能有多张脸，本次只处理可信度最高的那张。
-    // 考勤场景下应该只让一个人入镜，多张脸属于异常输入。
-    const FaceEngine::Face* bestFace = nullptr;
-
-    for (const FaceEngine::Face& face : faces)
+    else
     {
-        if (bestFace == nullptr
-            || face.score > bestFace->score)
+        // 一张画面里可能有多张脸，只处理可信度最高的那张。考勤场景
+        // 本来就要求一人入镜，多张脸属于异常输入。
+        const FaceEngine::Face* bestFace = nullptr;
+
+        for (const FaceEngine::Face& face : faces)
         {
-            bestFace = &face;
+            if (bestFace == nullptr
+                || face.score > bestFace->score)
+            {
+                bestFace = &face;
+            }
         }
-    }
 
-    window_.appendStatusText(
-        QString("检测到人脸：位置(%1, %2)，尺寸 %3x%4，检测得分 %5")
-            .arg(bestFace->box.x)
-            .arg(bestFace->box.y)
-            .arg(bestFace->box.width)
-            .arg(bestFace->box.height)
-            .arg(bestFace->score, 0, 'f', 4));
+        const cv::Mat embedding =
+            bestFace->embedding;
 
-    const cv::Mat embedding =
-        bestFace->embedding;
-
-    if (templates_.isEmpty())
-    {
-        window_.appendStatusText(
-            "未识别：还没有登记过任何人脸模板");
-
+        // 登记功能用的永远是"最近一帧的人脸"，跟日志是否输出无关，
+        // 所以每次都要更新。
         lastEmbedding_ = embedding.clone();
 
-        return;
+        result = describeRecognition(embedding);
+    }
+
+    // 只在结果发生变化时记一行。日志记录的是状态变化，不是每一次采样，
+    // 否则每秒钟六行会把真正重要的信息冲走。
+    if (result != lastRecognitionResult_)
+    {
+        lastRecognitionResult_ = result;
+
+        window_.appendStatusText(result);
+    }
+}
+
+QString ServerController::describeRecognition(
+    const cv::Mat& embedding)
+{
+    if (templates_.isEmpty())
+    {
+        return "未识别：还没有登记过任何人脸模板";
     }
 
     double bestScore = 0.0;
@@ -227,6 +241,7 @@ void ServerController::onMessageReceived(
             FaceEngine::fromBytes(
                 candidate.featureData);
 
+        // 库里可能存着尺寸不对的脏数据，跳过一条比让整次识别失败合理。
         if (candidateEmbedding.empty())
         {
             continue;
@@ -247,21 +262,15 @@ void ServerController::onMessageReceived(
 
     if (bestScore >= FaceEngine::kMatchThreshold)
     {
-        window_.appendStatusText(
-            QString("识别成功：%1（工号 %2），相似度 %3")
-                .arg(bestName)
-                .arg(bestEmployeeNo)
-                .arg(bestScore, 0, 'f', 4));
-    }
-    else
-    {
-        window_.appendStatusText(
-            QString("未识别：最高相似度 %1，低于阈值 %2")
-                .arg(bestScore, 0, 'f', 4)
-                .arg(FaceEngine::kMatchThreshold, 0, 'f', 3));
+        return QString("识别成功：%1（工号 %2），相似度 %3")
+            .arg(bestName)
+            .arg(bestEmployeeNo)
+            .arg(bestScore, 0, 'f', 4);
     }
 
-    lastEmbedding_ = embedding.clone();
+    return QString("未识别：最高相似度 %1，低于阈值 %2")
+        .arg(bestScore, 0, 'f', 4)
+        .arg(FaceEngine::kMatchThreshold, 0, 'f', 3);
 }
 
 void ServerController::onAddEmployee(

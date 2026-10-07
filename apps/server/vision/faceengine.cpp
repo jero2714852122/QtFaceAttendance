@@ -6,6 +6,11 @@ namespace
 {
 // SFace 的输出固定是 1x128 的 float 特征向量，也就是 512 字节。
 constexpr int kEmbeddingColumns = 128;
+
+// YuNet 默认的置信度阈值是 0.9，正脸很稳，但人脸偏转十几度就会被整行
+// 丢弃，后面的识别根本没机会跑。实测 0.7 能救回 15 度偏转，代价是偶尔
+// 会框住不是脸的东西，由后面的识别阈值兜底。
+constexpr float kDetectionScoreThreshold = 0.7f;
 }
 
 bool FaceEngine::load(
@@ -18,7 +23,8 @@ bool FaceEngine::load(
         detector_ = cv::FaceDetectorYN::create(
             detectorModelPath.toStdString(),
             "",
-            cv::Size(320, 320));
+            cv::Size(320, 320),
+            kDetectionScoreThreshold);
     }
     catch (const cv::Exception& error)
     {
