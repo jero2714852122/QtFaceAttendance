@@ -45,5 +45,6 @@ private:
     QElapsedTimer detectionClock_;
     std::vector<cv::Rect> detectedFaces_;
 
-    bool jpegSent_ = false;
+    // 上传限流用：靠它算"距上次上传过了多久"。
+    QElapsedTimer frameSendClock_;
 };

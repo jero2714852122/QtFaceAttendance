@@ -71,7 +71,7 @@ void AttendanceController::startCamera()
         return;
     }
 
-    jpegSent_ = false;
+    frameSendClock_.invalidate();
     detectedFaces_.clear();
     detectionClock_.invalidate();
 
@@ -126,9 +126,18 @@ void AttendanceController::processFrame()
             frame,
             detectedFaces_);
 
-    if (!jpegSent_ &&
-        networkClient_.isConnected() &&
-        !detectedFaces_.empty())
+    // 预览定时器大约每 30 毫秒触发一次。逐帧上传会把带宽和 CPU 打满，
+    // 而人脸在半秒内不会变成另一个人，所以按固定间隔抽样上传。
+    constexpr qint64 kFrameSendIntervalMs = 500;
+
+    const bool sendDue =
+        !frameSendClock_.isValid()
+        || frameSendClock_.elapsed() >= kFrameSendIntervalMs;
+
+    // 这里刻意不再要求"客户端检测到脸才发"。客户端用的检测器比服务端的
+    // 弱，一漏检画面就断流；而且服务端收不到"没人脸"的帧，就永远不知道
+    // 人已经走开了。用带宽换正确性，本机演示完全负担得起。
+    if (networkClient_.isConnected() && sendDue)
     {
         QByteArray jpegBytes =
             FrameProcessor::encodeJpeg(
@@ -143,7 +152,9 @@ void AttendanceController::processFrame()
             if (networkClient_.sendPayload(
                     jpegPayload) >= 0)
             {
-                jpegSent_ = true;
+                // 只有发送成功才重置计时。失败就留着过期的计时器，
+                // 让下一帧立刻重试，而不是白等半秒。
+                frameSendClock_.restart();
             }
         }
     }
