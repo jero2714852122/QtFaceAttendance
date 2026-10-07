@@ -33,6 +33,13 @@ public:
         const cv::Mat& firstEmbedding,
         const cv::Mat& secondEmbedding) const;
 
+    // 特征向量与字节数组互转，用于把模板存进数据库
+    static QByteArray toBytes(
+        const cv::Mat& embedding);
+
+    static cv::Mat fromBytes(
+        const QByteArray& bytes);
+
     bool isLoaded() const;
 
     QString lastError() const;

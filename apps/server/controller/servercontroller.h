@@ -5,6 +5,7 @@
 #include <QString>
 #include "database/employeerepository.h"
 #include "vision/faceengine.h"
+#include "database/facetemplaterepository.h"
 class DatabaseManager;
 class Server;
 class ServerWindow;
@@ -22,6 +23,7 @@ public:
 
     bool initializeDatabase();
     void loadEmployees();
+    void loadTemplates();
     bool initializeVision();
 private slots:
     void onClientConnected(
@@ -52,6 +54,9 @@ private slots:
         const QString& name,
         const QString& department);
 
+    void onRegisterFace(
+        qint64 id);
+
 private:
     Server& server_;
     ServerWindow& window_;
@@ -59,4 +64,6 @@ private:
     EmployeeRepository employeeRepository_;
     FaceEngine faceEngine_;
     cv::Mat lastEmbedding_;
+    FaceTemplateRepository faceTemplateRepository_;
+    QList<FaceTemplate> templates_;
 };

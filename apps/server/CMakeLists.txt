@@ -14,6 +14,8 @@ qt_add_executable(face_attendance_server
     database/employee.h
     database/employeerepository.h database/employeerepository.cpp
     vision/faceengine.h vision/faceengine.cpp
+    database/facetemplate.h
+    database/facetemplaterepository.h database/facetemplaterepository.cpp
 )
 
 target_link_libraries(face_attendance_server

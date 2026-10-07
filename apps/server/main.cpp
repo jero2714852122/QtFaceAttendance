@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
     else
     {
         controller.loadEmployees();
-
+        controller.loadTemplates();
         server.listen(
             QHostAddress::LocalHost,
             45454);

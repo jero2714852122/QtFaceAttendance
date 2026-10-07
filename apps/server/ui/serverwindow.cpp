@@ -89,7 +89,16 @@ ServerWindow::ServerWindow(
     updateButton_->setEnabled(false);
     deleteButton_->setEnabled(false);
 
+    registerButton_ =
+        new QPushButton(
+            "登记人脸",
+            centralWidget);
 
+    registerButton_->setEnabled(false);
+
+    // 登记用的是"服务端最近收到的那一帧"，这个行为不写在界面上没人猜得到。
+    registerButton_->setToolTip(
+        "把最近收到的一帧里的人脸登记给列表中选中的员工");
 
     buttonLayout->addWidget(
         addButton_);
@@ -102,6 +111,9 @@ ServerWindow::ServerWindow(
 
     buttonLayout->addWidget(
         updateButton_);
+
+    buttonLayout->addWidget(
+        registerButton_);
 
     layout->addLayout(
         buttonLayout);
@@ -131,6 +143,7 @@ ServerWindow::ServerWindow(
 
             deleteButton_->setEnabled(hasSelection);
             updateButton_->setEnabled(hasSelection);
+            registerButton_->setEnabled(hasSelection);
 
             // 选中员工后工号只读：工号是业务主键，不允许修改。
             employeeNoEdit_->setReadOnly(hasSelection);
@@ -239,6 +252,30 @@ ServerWindow::ServerWindow(
                 nameEdit_->text(),
                 departmentEdit_->text());
         });
+
+    QObject::connect(
+        registerButton_,
+        &QPushButton::clicked,
+        this,
+        [this]() {
+            QListWidgetItem* current =
+                employeeList_->currentItem();
+
+            if (!current)
+            {
+                appendStatusText(
+                    "请先在列表中选择一名员工");
+
+                return;
+            }
+
+            const Employee employee =
+                current->data(Qt::UserRole)
+                    .value<Employee>();
+
+            emit registerFaceRequested(employee.id);
+        });
+
     QObject::connect(
         refreshButton_,
         &QPushButton::clicked,

@@ -50,3 +50,19 @@ the relevant code in plain language and record concepts that need revisiting.
 The schedule may advance ahead of the nominal day when the learner has time,
 but announce the day transition before starting its material. Never change the
 active day silently.
+
+## Code style
+
+Code that lands in this repository follows normal work standards, not tutorial
+narration. Annotations in chat may be richer than the comments that end up in
+the file.
+
+- Comment the reason, not the mechanics. The code already shows what it does.
+- Comment these explicitly: wire formats and byte layouts, thresholds and other
+  magic numbers, non-obvious library behaviour, invariants, and workarounds that
+  would otherwise look wrong.
+- Use a short file-level comment only when the file's purpose is not obvious
+  from its name and contents.
+- Do not annotate every line. A block that needs a comment per line usually
+  needs better names instead.
+- Chinese comments are fine in this repository; match the surrounding file.

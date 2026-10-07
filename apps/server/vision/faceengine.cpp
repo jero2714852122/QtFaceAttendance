@@ -1,5 +1,13 @@
 #include "faceengine.h"
 #include <opencv2/imgcodecs.hpp>
+#include <cstring>
+
+namespace
+{
+// SFace 的输出固定是 1x128 的 float 特征向量，也就是 512 字节。
+constexpr int kEmbeddingColumns = 128;
+}
+
 bool FaceEngine::load(
     const QString& detectorModelPath,
     const QString& recognizerModelPath)
@@ -179,6 +187,53 @@ double FaceEngine::similarity(
         secondEmbedding,
         cv::FaceRecognizerSF::DisType::FR_COSINE);
 }
+
+QByteArray FaceEngine::toBytes(
+    const cv::Mat& embedding)
+{
+    if (embedding.empty()
+        || embedding.type() != CV_32F)
+    {
+        return {};
+    }
+
+    // Mat 的特征数据是连续存放的 float，直接按字节整块取出来即可，
+    // 不需要逐个元素遍历。
+    return QByteArray(
+        reinterpret_cast<const char*>(
+            embedding.ptr<float>()),
+        static_cast<int>(
+            embedding.total() * sizeof(float)));
+}
+
+cv::Mat FaceEngine::fromBytes(
+    const QByteArray& bytes)
+{
+    const int expectedSize =
+        kEmbeddingColumns
+        * static_cast<int>(sizeof(float));
+
+    // 数据库里的内容可能被外部工具改坏，长度不对就不能硬拷贝，
+    // 否则 memcpy 会越过 Mat 的缓冲区边界。
+    if (bytes.size() != expectedSize)
+    {
+        return {};
+    }
+
+    cv::Mat embedding(
+        1,
+        kEmbeddingColumns,
+        CV_32F);
+
+    std::memcpy(
+        embedding.ptr<float>(),
+        bytes.constData(),
+        static_cast<size_t>(expectedSize));
+
+    return embedding;
+}
+
+
 QString FaceEngine::lastError() const
 {
     return lastError_;

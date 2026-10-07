@@ -17,6 +17,7 @@ ServerController::ServerController(
     , window_(window)
     , database_(database)
     ,employeeRepository_(database)
+    ,faceTemplateRepository_(database)
 {
     QObject::connect(
         &server_,
@@ -77,6 +78,12 @@ ServerController::ServerController(
         &ServerWindow::updateEmployeeRequested,
         this,
         &ServerController::onUpdateEmployee);
+
+    QObject::connect(
+        &window_,
+        &ServerWindow::registerFaceRequested,
+        this,
+        &ServerController::onRegisterFace);
 }
 
 bool ServerController::initializeDatabase()
@@ -323,6 +330,55 @@ void ServerController::onUpdateEmployee(
         + cleanName);
 
     loadEmployees();
+}
+
+void ServerController::loadTemplates()
+{
+    QList<FaceTemplate> loaded;
+
+    if (!faceTemplateRepository_.findAll(loaded))
+    {
+        window_.appendStatusText(
+            "读取人脸模板失败："
+            + faceTemplateRepository_.lastError());
+
+        return;
+    }
+
+    templates_ = loaded;
+
+    // 识别时要逐条比对，放在内存里避免每帧查一次库。
+    window_.appendStatusText(
+        QString("已加载 %1 张人脸模板")
+            .arg(templates_.size()));
+}
+
+void ServerController::onRegisterFace(
+    qint64 id)
+{
+    if (lastEmbedding_.empty())
+    {
+        window_.appendStatusText(
+            "登记失败：还没有收到带人脸的画面");
+
+        return;
+    }
+
+    if (!faceTemplateRepository_.saveTemplate(
+            id,
+            FaceEngine::toBytes(lastEmbedding_)))
+    {
+        window_.appendStatusText(
+            "人脸登记失败："
+            + faceTemplateRepository_.lastError());
+
+        return;
+    }
+
+    window_.appendStatusText(
+        "人脸登记成功");
+
+    loadTemplates();
 }
 
 void ServerController::loadEmployees()
