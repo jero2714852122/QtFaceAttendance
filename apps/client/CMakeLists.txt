@@ -1,4 +1,4 @@
-find_package(OpenCV 4.12 REQUIRED COMPONENTS core imgproc videoio)
+find_package(OpenCV 4.12 REQUIRED COMPONENTS core imgproc videoio objdetect dnn)
 
 qt_add_executable(face_attendance_client
     main.cpp
@@ -32,8 +32,8 @@ add_custom_command(TARGET face_attendance_client POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory
         $<TARGET_FILE_DIR:face_attendance_client>/models
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${CMAKE_SOURCE_DIR}/assets/haarcascade_frontalface_default.xml
-        $<TARGET_FILE_DIR:face_attendance_client>/models/haarcascade_frontalface_default.xml
+        ${CMAKE_SOURCE_DIR}/assets/face_detection_yunet_2023mar.onnx
+        $<TARGET_FILE_DIR:face_attendance_client>/models/face_detection_yunet_2023mar.onnx
 )
 
 set_target_properties(face_attendance_client PROPERTIES

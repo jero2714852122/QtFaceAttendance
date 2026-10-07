@@ -109,11 +109,9 @@ void AttendanceController::processFrame()
     if (!detectionClock_.isValid() ||
         detectionClock_.elapsed() >= 100)
     {
-        cv::Mat grayFrame =
-            FrameProcessor::toGray(frame);
-
+        // YuNet 要的是彩色图，不能像 Haar 那样先转灰度。
         faceDetector_.detect(
-            grayFrame,
+            frame,
             detectedFaces_);
 
         detectionClock_.restart();

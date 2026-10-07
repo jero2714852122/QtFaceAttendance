@@ -18,7 +18,7 @@ int main(int argc, char* argv[])
     //资源加载，提供依赖
     const QString modelPath =
         QCoreApplication::applicationDirPath()
-        + "/models/haarcascade_frontalface_default.xml";
+        + "/models/face_detection_yunet_2023mar.onnx";
 
     if (!faceDetector.load(
             modelPath.toStdString()))
