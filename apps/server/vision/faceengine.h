@@ -15,7 +15,10 @@ public:
     {
         cv::Rect box;
         cv::Mat embedding;
+        float score = 0.0f;
     };
+
+    static constexpr double kMatchThreshold = 0.363;
 
     bool load(
         const QString& detectorModelPath,

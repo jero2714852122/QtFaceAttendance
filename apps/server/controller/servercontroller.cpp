@@ -156,6 +156,7 @@ void ServerController::onMessageReceived(
         + " 收到完整消息，字节数："
         + QString::number(message.size()));
 
+    // 协议分流：JPEG\n 开头的是图像帧，其他的是文本控制消息。
     if (!message.startsWith("JPEG\n"))
     {
         return;
@@ -182,36 +183,82 @@ void ServerController::onMessageReceived(
         return;
     }
 
-    const cv::Mat& embedding =
-        faces.front().embedding;
+    // 一张画面里可能有多张脸，本次只处理可信度最高的那张。
+    // 考勤场景下应该只让一个人入镜，多张脸属于异常输入。
+    const FaceEngine::Face* bestFace = nullptr;
+
+    for (const FaceEngine::Face& face : faces)
+    {
+        if (bestFace == nullptr
+            || face.score > bestFace->score)
+        {
+            bestFace = &face;
+        }
+    }
 
     window_.appendStatusText(
-        QString("检测到人脸：位置(%1, %2)，尺寸 %3x%4，特征维度 %5x%6")
-            .arg(faces.front().box.x)
-            .arg(faces.front().box.y)
-            .arg(faces.front().box.width)
-            .arg(faces.front().box.height)
-            .arg(embedding.rows)
-            .arg(embedding.cols));
+        QString("检测到人脸：位置(%1, %2)，尺寸 %3x%4，检测得分 %5")
+            .arg(bestFace->box.x)
+            .arg(bestFace->box.y)
+            .arg(bestFace->box.width)
+            .arg(bestFace->box.height)
+            .arg(bestFace->score, 0, 'f', 4));
 
-    window_.appendStatusText(
-        QString("特征前 4 个值：%1, %2, %3, %4")
-            .arg(embedding.at<float>(0, 0), 0, 'f', 4)
-            .arg(embedding.at<float>(0, 1), 0, 'f', 4)
-            .arg(embedding.at<float>(0, 2), 0, 'f', 4)
-            .arg(embedding.at<float>(0, 3), 0, 'f', 4));
+    const cv::Mat embedding =
+        bestFace->embedding;
 
-    if (!lastEmbedding_.empty())
+    if (templates_.isEmpty())
     {
         window_.appendStatusText(
-            QString("与上一帧的相似度：%1（判定阈值 0.363）")
-                .arg(
-                    faceEngine_.similarity(
-                        lastEmbedding_,
-                        embedding),
-                    0,
-                    'f',
-                    4));
+            "未识别：还没有登记过任何人脸模板");
+
+        lastEmbedding_ = embedding.clone();
+
+        return;
+    }
+
+    double bestScore = 0.0;
+    QString bestName;
+    QString bestEmployeeNo;
+
+    for (const FaceTemplate& candidate : templates_)
+    {
+        const cv::Mat candidateEmbedding =
+            FaceEngine::fromBytes(
+                candidate.featureData);
+
+        if (candidateEmbedding.empty())
+        {
+            continue;
+        }
+
+        const double score =
+            faceEngine_.similarity(
+                embedding,
+                candidateEmbedding);
+
+        if (score > bestScore)
+        {
+            bestScore = score;
+            bestName = candidate.name;
+            bestEmployeeNo = candidate.employeeNo;
+        }
+    }
+
+    if (bestScore >= FaceEngine::kMatchThreshold)
+    {
+        window_.appendStatusText(
+            QString("识别成功：%1（工号 %2），相似度 %3")
+                .arg(bestName)
+                .arg(bestEmployeeNo)
+                .arg(bestScore, 0, 'f', 4));
+    }
+    else
+    {
+        window_.appendStatusText(
+            QString("未识别：最高相似度 %1，低于阈值 %2")
+                .arg(bestScore, 0, 'f', 4)
+                .arg(FaceEngine::kMatchThreshold, 0, 'f', 3));
     }
 
     lastEmbedding_ = embedding.clone();

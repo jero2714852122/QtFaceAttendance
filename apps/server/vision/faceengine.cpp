@@ -114,6 +114,9 @@ bool FaceEngine::analyze(
                 static_cast<int>(
                     detections.at<float>(row, 3)));
 
+            face.score =
+                detections.at<float>(row, 14);
+
             cv::Mat alignedFace;
 
             recognizer_->alignCrop(
