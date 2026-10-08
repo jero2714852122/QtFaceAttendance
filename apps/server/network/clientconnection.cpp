@@ -2,8 +2,6 @@
 
 #include "frameprotocol.h"
 
-#include <QDataStream>
-#include <QIODevice>
 #include <QTcpSocket>
 
 ClientConnection::ClientConnection(
@@ -66,54 +64,32 @@ void ClientConnection::onReadyRead()
 
 void ClientConnection::processFrames()
 {
-    constexpr quint32 maxPayloadSize =
-        10 * 1024 * 1024;
-
     while (true)
     {
-        if (receiveBuffer_.size() < 4)
+        QByteArray message;
+
+        const FrameProtocol::FrameResult result =
+            FrameProtocol::takeFrame(
+                receiveBuffer_,
+                message);
+
+        if (result == FrameProtocol::FrameResult::Incomplete)
         {
             return;
         }
 
-        QDataStream input(receiveBuffer_);
-        input.setByteOrder(
-            QDataStream::BigEndian);
-
-        quint32 payloadSize = 0;
-        input >> payloadSize;
-
-        if (payloadSize > maxPayloadSize)
+        if (result == FrameProtocol::FrameResult::Invalid)
         {
             // 长度字段明显不对，说明这条字节流已经错位，后面再也对不齐了。
-            // 清掉缓冲继续读只是撞运气，正确做法是断开这条连接重来，
-            // 否则畸形数据会一直占用服务端资源。
+            // 断开重来，而不是清掉缓冲继续撞运气。
             emit errorOccurred(
-                "收到异常长度的数据，已断开连接");
+                peerName()
+                + "：收到异常长度的数据，已断开连接");
 
             receiveBuffer_.clear();
             socket_->disconnectFromHost();
             return;
         }
-
-        const qsizetype packetSize =
-            4 + static_cast<qsizetype>(
-                payloadSize);
-
-        if (receiveBuffer_.size() < packetSize)
-        {
-            return;
-        }
-
-        QByteArray message =
-            receiveBuffer_.mid(
-                4,
-                static_cast<qsizetype>(
-                    payloadSize));
-
-        receiveBuffer_.remove(
-            0,
-            packetSize);
 
         emit messageReceived(message);
     }
