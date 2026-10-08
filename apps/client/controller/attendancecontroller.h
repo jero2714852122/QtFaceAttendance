@@ -34,6 +34,7 @@ private slots:
     void processFrame();
     void onNetworkConnected();
     void onNetworkError(const QString& errorMessage);
+    void onServerMessage(const QByteArray& message);
 
 private:
     MainWindow& window_;

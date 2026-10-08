@@ -17,6 +17,7 @@ public:
 
     void setStatusText(const QString& text);
     void setFaceCount(int count);
+    void setResultText(const QString& text);
     void setCameraRunning(bool running);
     void showPreviewImage(const QImage& image);
     void resetPreview();
@@ -30,6 +31,7 @@ private:
     QLabel* cameraPreview_ = nullptr;
     QLabel* statusLabel_ = nullptr;
     QLabel* identityLabel_ = nullptr;
+    QLabel* resultLabel_ = nullptr;
     QPushButton* startButton_ = nullptr;
     QPushButton* stopButton_ = nullptr;
 };

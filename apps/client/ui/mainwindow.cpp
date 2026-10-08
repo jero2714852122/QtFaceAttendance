@@ -33,6 +33,11 @@ MainWindow::MainWindow(QWidget* parent)
     identityLabel_->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     mainLayout->addWidget(identityLabel_);
 
+    resultLabel_ = new QLabel("识别结果：等待服务端返回", centralWidget);
+    resultLabel_->setMinimumHeight(40);
+    resultLabel_->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+    mainLayout->addWidget(resultLabel_);
+
     QHBoxLayout* actionLayout = new QHBoxLayout;
 
     startButton_ = new QPushButton("打开摄像头", centralWidget);
@@ -68,6 +73,10 @@ void MainWindow::setStatusText(const QString&text)
 void MainWindow::setFaceCount(int count)
 {
     identityLabel_->setText(QString("检测到人脸数量：%1").arg(count));
+}
+void MainWindow::setResultText(const QString&text)
+{
+    resultLabel_->setText("识别结果：" + text);
 }
 void MainWindow::setCameraRunning(bool running)
 {

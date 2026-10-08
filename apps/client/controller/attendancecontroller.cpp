@@ -8,6 +8,7 @@
 
 #include <QByteArray>
 #include <QImage>
+#include <QList>
 
 AttendanceController::AttendanceController(
     MainWindow& window,
@@ -53,6 +54,12 @@ AttendanceController::AttendanceController(
         &NetworkClient::connectionError,
         this,
         &AttendanceController::onNetworkError);
+
+    QObject::connect(
+        &networkClient_,
+        &NetworkClient::messageReceived,
+        this,
+        &AttendanceController::onServerMessage);
 }
 
 void AttendanceController::startCamera()
@@ -164,17 +171,65 @@ void AttendanceController::processFrame()
 
 void AttendanceController::onNetworkConnected()
 {
+    // 模型加载失败是致命问题，它的提示不能让网络状态盖掉。
+    if (faceDetector_.empty())
+    {
+        window_.setStatusText(
+            "状态：人脸检测模型不可用");
+
+        return;
+    }
+
     window_.setStatusText(
         "状态：已连接服务器");
-
-    networkClient_.sendPayload("msg1");
-    networkClient_.sendPayload("msg2");
 }
 
 void AttendanceController::onNetworkError(
     const QString& errorMessage)
 {
+    // 同理：能连上服务器但模型没加载起来，问题在模型不在网络，
+    // 这时候报"连接失败"会把人带到错误的方向。
+    if (faceDetector_.empty())
+    {
+        return;
+    }
+
     window_.setStatusText(
         "状态：服务器连接失败  "
         + errorMessage);
+}
+
+void AttendanceController::onServerMessage(
+    const QByteArray& message)
+{
+    // 目前服务端只回一种消息，以后要加别的类型也在这里按开头分流。
+    if (!message.startsWith("RESULT\t"))
+    {
+        return;
+    }
+
+    // "RESULT\t" 占 7 个字节，后面是制表符分隔的两个字段。
+    const QList<QByteArray> fields =
+        message.mid(7).split('\t');
+
+    if (fields.size() < 2)
+    {
+        return;
+    }
+
+    const QString identity =
+        QString::fromUtf8(fields.at(0));
+
+    const QString attendance =
+        QString::fromUtf8(fields.at(1));
+
+    if (attendance.isEmpty())
+    {
+        window_.setResultText(identity);
+
+        return;
+    }
+
+    window_.setResultText(
+        identity + " · " + attendance);
 }

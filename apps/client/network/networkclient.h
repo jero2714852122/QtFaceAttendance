@@ -20,6 +20,12 @@ signals:
     void disconnected();
     void connectionError(const QString& errorMessage);
 
+    void messageReceived(const QByteArray& message);
+
+private slots:
+    void onReadyRead();
+
 private:
     QTcpSocket socket_;
+    QByteArray receiveBuffer_;
 };
