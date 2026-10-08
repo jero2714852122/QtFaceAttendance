@@ -85,10 +85,14 @@ void ClientConnection::processFrames()
 
         if (payloadSize > maxPayloadSize)
         {
+            // 长度字段明显不对，说明这条字节流已经错位，后面再也对不齐了。
+            // 清掉缓冲继续读只是撞运气，正确做法是断开这条连接重来，
+            // 否则畸形数据会一直占用服务端资源。
             emit errorOccurred(
-                "收到消息过大，已拒绝");
+                "收到异常长度的数据，已断开连接");
 
             receiveBuffer_.clear();
+            socket_->disconnectFromHost();
             return;
         }
 
