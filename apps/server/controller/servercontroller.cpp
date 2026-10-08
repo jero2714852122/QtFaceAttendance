@@ -521,6 +521,42 @@ void ServerController::onRegisterFace(
         return;
     }
 
+    // 一张脸只能属于一个工号。登记前先跟已有的模板比一遍：同一张脸挂在
+    // 两个人名下，考勤就会记到错的人头上，而且事后完全没法分辨是谁。
+    for (const FaceTemplate& candidate : templates_)
+    {
+        // 本人重新登记是覆盖，允许。
+        if (candidate.employeeId == id)
+        {
+            continue;
+        }
+
+        const cv::Mat candidateEmbedding =
+            FaceEngine::fromBytes(
+                candidate.featureData);
+
+        if (candidateEmbedding.empty())
+        {
+            continue;
+        }
+
+        const double score =
+            faceEngine_.similarity(
+                lastEmbedding_,
+                candidateEmbedding);
+
+        if (score >= FaceEngine::kMatchThreshold)
+        {
+            window_.appendStatusText(
+                QString("登记失败：这张脸已经登记给 %1（工号 %2），相似度 %3")
+                    .arg(candidate.name)
+                    .arg(candidate.employeeNo)
+                    .arg(score, 0, 'f', 4));
+
+            return;
+        }
+    }
+
     if (!faceTemplateRepository_.saveTemplate(
             id,
             FaceEngine::toBytes(lastEmbedding_)))
