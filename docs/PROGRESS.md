@@ -3,11 +3,21 @@
 ## Current State
 
 - Date: 2026-10-08
-- Stage: Day 11 complete; Day 12 is next
-- Active goal: Turn a successful recognition into a rate-limited attendance row and show the outcome on the client
-- Last verified: the whole loop runs end to end. The client streams frames, the server recognizes, writes a rate-limited attendance row, and returns the outcome to the client
-- Next action: Announce Day 12 and harden the failure paths: camera, model, database, network, and shutdown
-- Pending release step: the Day 11 change set is committed but not pushed
+- Stage: Day 12 complete; Day 13 is next
+- Active goal: Make every failure path visible and safe instead of silent or fatal
+- Last verified: an impossible frame length is rejected and the client dropped, the client reconnects on its own after the server comes back, and closing the server cleanly moves the client into retry
+- Next action: Announce Day 13, add protocol and database tests, and produce a deployable Windows folder
+- Pending release step: the Day 11 and Day 12 change sets are committed but not pushed
+
+## Day 12 Findings
+
+- Camera read failure used to repeat the same error about thirty times a second and never recover. It now stops the timer, releases the device, and leaves the user a clear next step.
+- The client retries the connection every three seconds, so starting the client before the server no longer requires restarting the client.
+- A frame whose length field is impossible means the byte stream is desynchronised and can never realign. The server now disconnects that client instead of clearing the buffer and hoping.
+- Closing the server window ends the process cleanly; the client notices within a second and moves into retry.
+- Peer names now include the port, so two clients on one machine stay distinguishable in the logs and in replies.
+- Model, database, and startup failures were already safe: both applications report them and refuse to start the parts that depend on them.
+- The camera read failure path could not be reproduced on this machine because the camera is built in. That path is defensive rather than measured.
 
 ## Day 11 Findings
 
@@ -262,3 +272,14 @@
 - [x] Send the recognition and attendance outcome back to the client over the existing framed protocol.
 - [x] Show the returned result in the client window.
 - [x] Fix the deduplication key so a live camera cannot flood the log.
+
+## Day 12 Checklist
+
+- [x] Audit the camera, model, database, network, and shutdown failure paths.
+- [x] Stop the camera cleanly when reading a frame fails instead of spinning on the error.
+- [x] Keep the model loading failure message visible instead of letting a network message replace it.
+- [x] Reconnect the client automatically after the connection drops.
+- [x] Disconnect a client that sends a frame with an impossible length.
+- [x] Confirm the server exits cleanly and the client notices.
+- [ ] Reproduce the camera read failure on hardware that allows unplugging.
+- [ ] Reject a frame whose bytes are truncated but whose length is valid.
