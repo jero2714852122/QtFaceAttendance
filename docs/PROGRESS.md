@@ -18,6 +18,7 @@
 - Peer names now include the port, so two clients on one machine stay distinguishable in the logs and in replies.
 - Model, database, and startup failures were already safe: both applications report them and refuse to start the parts that depend on them.
 - The camera read failure path could not be reproduced on this machine because the camera is built in. That path is defensive rather than measured.
+- One face could be registered to more than one employee. Two templates for the same face make recognition pick whichever the database returns first, so attendance can land on the wrong person and nothing in the record shows that it happened. Registration now compares the new face against every other employee's template and refuses a match at or above the recognition threshold; re-registering the same employee still overwrites, which is how a template gets updated.
 
 ## Day 11 Findings
 
@@ -281,5 +282,7 @@
 - [x] Reconnect the client automatically after the connection drops.
 - [x] Disconnect a client that sends a frame with an impossible length.
 - [x] Confirm the server exits cleanly and the client notices.
+- [x] Refuse to register one face to a second employee.
 - [ ] Reproduce the camera read failure on hardware that allows unplugging.
 - [ ] Reject a frame whose bytes are truncated but whose length is valid.
+- [ ] Decide whether databases that already contain a duplicated face need a repair path.
