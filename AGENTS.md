@@ -66,3 +66,14 @@ the file.
 - Do not annotate every line. A block that needs a comment per line usually
   needs better names instead.
 - Chinese comments are fine in this repository; match the surrounding file.
+
+## Git workflow
+
+The learner runs every stage, commit, and push from now on, to build fluency
+with the tools.
+
+- Codex finishes and verifies the change, then reports the changed files and a
+  suggested commit message.
+- Codex does not run `git add`, `git commit`, or `git push` in this repository.
+- Keeping the working tree clean, splitting commits sensibly, and pushing is the
+  learner's job. Remind them if verified work sits uncommitted or unpushed.
