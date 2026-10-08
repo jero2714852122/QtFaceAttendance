@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QString>
 #include <QTcpSocket>
+#include <QTimer>
 
 class NetworkClient : public QObject
 {
@@ -24,8 +25,15 @@ signals:
 
 private slots:
     void onReadyRead();
+    void onReconnectTimeout();
 
 private:
+    void startReconnectTimer();
+
     QTcpSocket socket_;
     QByteArray receiveBuffer_;
+
+    QString host_;
+    quint16 port_ = 0;
+    QTimer reconnectTimer_;
 };

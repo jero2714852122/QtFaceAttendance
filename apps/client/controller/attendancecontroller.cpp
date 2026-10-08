@@ -106,8 +106,14 @@ void AttendanceController::processFrame()
 
     if (!camera_.read(frame) || frame.empty())
     {
+        // 读不到帧通常意味着摄像头被拔掉、被别的程序抢走，或者驱动出问题。
+        // 必须顺手把定时器停掉并释放设备：否则每秒会重复报几十次同样的
+        // 错误，界面看起来像卡死，用户也不知道该点哪里才能恢复。
+        stopCamera();
+
         window_.setStatusText(
-            "读取摄像头画面失败");
+            "状态：摄像头读取失败，请检查设备后重新打开");
+
         return;
     }
 
@@ -196,7 +202,8 @@ void AttendanceController::onNetworkError(
 
     window_.setStatusText(
         "状态：服务器连接失败  "
-        + errorMessage);
+        + errorMessage
+        + "，正在自动重试");
 }
 
 void AttendanceController::onServerMessage(
