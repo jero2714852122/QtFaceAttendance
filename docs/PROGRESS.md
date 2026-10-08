@@ -3,11 +3,19 @@
 ## Current State
 
 - Date: 2026-10-08
-- Stage: Day 12 complete; Day 13 is next
-- Active goal: Make every failure path visible and safe instead of silent or fatal
-- Last verified: an impossible frame length is rejected and the client dropped, the client reconnects on its own after the server comes back, and closing the server cleanly moves the client into retry
-- Next action: Announce Day 13, add protocol and database tests, and produce a deployable Windows folder
-- Pending release step: the Day 11 and Day 12 change sets are committed but not pushed
+- Stage: Day 13 in progress: the tests are in, packaging is next
+- Active goal: Prove the protocol and database layers with automated tests, then ship a folder that runs on another machine
+- Last verified: five protocol cases and seven database cases pass under ctest, and the network still works after the decoder moved into `common`
+- Next action: Configure a Release build, run windeployqt, and check that the packaged folder starts on a machine with no Qt on its path
+- Pending release step: the Day 11, Day 12, and Day 13 change sets are committed but not pushed
+
+## Day 13 Findings
+
+- Frame decoding existed twice, once in `ClientConnection` and once in `NetworkClient`, and both copies were private, so the rule could not be tested. It now lives in `FrameProtocol::takeFrame()` and both sides call it.
+- `takeFrame()` returns three outcomes instead of a boolean. "Not enough bytes yet" and "the length field is impossible" need opposite reactions: keep waiting versus drop the connection.
+- The database test needs `QTEST_GUILESS_MAIN`, not `QTEST_APPLESS_MAIN`, because the SQL module needs a `QCoreApplication` to load its driver. With `APPLESS` the test crashes inside `addDatabase`.
+- Test executables land in the same build output directory as the applications, so they find the Qt DLLs that were deployed there already.
+- The duplicate-face rule still lives in the controller, which needs a window to exist, so it can only be checked by hand. Moving it somewhere testable is a Day 14 candidate.
 
 ## Day 12 Findings
 
@@ -286,3 +294,13 @@
 - [ ] Reproduce the camera read failure on hardware that allows unplugging.
 - [ ] Reject a frame whose bytes are truncated but whose length is valid.
 - [ ] Decide whether databases that already contain a duplicated face need a repair path.
+
+## Day 13 Checklist
+
+- [x] Move the frame decoding rule into `common` so both applications share one copy.
+- [x] Make the frame decoder return a result that distinguishes "not enough bytes" from "impossible length".
+- [x] Add a protocol test covering packing, one whole frame, a partial frame, two frames in one buffer, and an impossible length.
+- [x] Add a database test covering the schema, employee insert, duplicate number, update, cascade delete, and the attendance window.
+- [x] Wire the tests into `ctest` and confirm every case runs and passes.
+- [ ] Produce a Release build with `windeployqt` and verify the packaged folder runs.
+- [ ] Write the README that explains how to run the packaged build.
