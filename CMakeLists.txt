@@ -13,3 +13,6 @@ qt_standard_project_setup()
 add_subdirectory(common)
 add_subdirectory(apps/client)
 add_subdirectory(apps/server)
+
+enable_testing()
+add_subdirectory(tests)
