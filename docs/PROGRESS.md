@@ -3,12 +3,14 @@
 ## Current State
 
 - Date: 2026-10-08
-- Stage: Day 13 in progress: the tests are in, packaging is next
-- Active goal: Prove the protocol and database layers with automated tests, then ship a folder that runs on another machine
-- Last verified: five protocol cases and seven database cases pass under ctest, and the network still works after the decoder moved into `common`
-- Next action: Configure a Release build, run windeployqt, and check that the packaged folder starts on a machine with no Qt on its path
-- Pending release step: the Day 11, Day 12, and Day 13 change sets are committed but not pushed
+- Stage: Day 14 in progress: the README and the screenshots are in, the demo video is next
+- Active goal: Make the project readable to someone who has never seen it, and prepare the material for an interview
+- Last verified: the README renders an architecture diagram, the screenshots show both windows filled with made-up employee data, and every claim in the README matches what the code actually does
+- Next action: Record the demo video, then move to Day 15 and rehearse the 30 second, 3 minute, and 10 minute explanations
+- Remaining risk: the screenshots were taken by the assistant, which cannot view images, so the learner still has to confirm they look right
+- Remaining risk: the package has not been tried on a machine that never had Qt installed, which is the only test that really proves it
 - Reference: `docs/TROUBLESHOOTING.md` collects every problem hit so far, each with its symptom, cause, fix, and how to avoid it next time
+- Reference: `docs/PACKAGING.md` records the four packaging steps and why each one exists
 
 ## Day 13 Findings
 
@@ -17,6 +19,12 @@
 - The database test needs `QTEST_GUILESS_MAIN`, not `QTEST_APPLESS_MAIN`, because the SQL module needs a `QCoreApplication` to load its driver. With `APPLESS` the test crashes inside `addDatabase`.
 - Test executables land in the same build output directory as the applications, so they find the Qt DLLs that were deployed there already.
 - The duplicate-face rule still lives in the controller, which needs a window to exist, so it can only be checked by hand. Moving it somewhere testable is a Day 14 candidate.
+- Debug and Release are two separate builds. The two OpenCV DLLs differ only by a trailing `d`, and a Debug executable will not accept the Release one.
+- `windeployqt` only deploys Qt. OpenCV's DLL has to be copied by hand, because the tool has no idea what OpenCV is.
+- The fragile half of a Qt deployment is the plugins, not the libraries. Without `platforms/qwindows.dll` the program exits before it can show anything, and it does not say which file is missing.
+- `QT_DEBUG_PLUGINS=1` reveals where each plugin was loaded from. It is the cheapest way to catch a package that silently falls back to the Qt installation on the development machine.
+- The folder comes to about 154 MB: OpenCV 61, the Qt graphics stack 27, the software OpenGL fallback 20, and the two models 37.
+- A fresh package ships an empty database on purpose. The application creates and initialises it on first run.
 
 ## Day 12 Findings
 
@@ -303,5 +311,24 @@
 - [x] Add a protocol test covering packing, one whole frame, a partial frame, two frames in one buffer, and an impossible length.
 - [x] Add a database test covering the schema, employee insert, duplicate number, update, cascade delete, and the attendance window.
 - [x] Wire the tests into `ctest` and confirm every case runs and passes.
-- [ ] Produce a Release build with `windeployqt` and verify the packaged folder runs.
-- [ ] Write the README that explains how to run the packaged build.
+- [x] Produce a Release build with `windeployqt` and verify the packaged folder runs.
+- [x] Write `docs/PACKAGING.md` explaining the four steps and why each one exists.
+- [ ] Try the package on a machine that has never had Qt installed.
+- [x] Write the public README, architecture diagram, and demo material on Day 14.
+
+## Day 14 Checklist
+
+- [x] Write `README.md`: what the project is, what it does, how to build, how to run, how to operate.
+- [x] Draw the architecture diagram as Mermaid so GitHub renders it without an image file.
+- [x] Write down the design decisions that an interviewer is most likely to probe.
+- [x] List the known limitations honestly instead of overselling the project.
+- [x] Capture a screenshot of each window using made-up employee data, so no real names end up in a public repository.
+- [ ] Confirm by eye that the two screenshots look right.
+- [ ] Record the demo video.
+- [ ] Rehearse the 30 second, 3 minute, and 10 minute explanations on Day 15.
+
+## Day 14 Findings
+
+- Screenshots for a public repository must not contain real data. The empty database inside the packaged folder was used instead, and three made-up employees were added by hand.
+- The architecture diagram is written in Mermaid rather than exported as an image. It stays editable, GitHub renders it directly, and there is no binary file to keep in sync.
+- The README states what the project does not do. A blank "known limitations" section reads as either inexperience or dishonesty, and both invite harder questions.
