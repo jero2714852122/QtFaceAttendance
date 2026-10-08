@@ -39,6 +39,21 @@ void Server::close()
     server_.close();
 }
 
+qint64 Server::sendToPeer(
+    const QString& peer,
+    const QByteArray& payload)
+{
+    for (ClientConnection* connection : connections_)
+    {
+        if (connection->peerName() == peer)
+        {
+            return connection->sendPayload(payload);
+        }
+    }
+
+    return -1;
+}
+
 void Server::onNewConnection()
 {
     while (server_.hasPendingConnections())

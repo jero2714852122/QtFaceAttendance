@@ -18,6 +18,7 @@ ServerController::ServerController(
     , database_(database)
     ,employeeRepository_(database)
     ,faceTemplateRepository_(database)
+    ,attendanceRepository_(database)
 {
     QObject::connect(
         &server_,
@@ -142,7 +143,7 @@ void ServerController::onClientDisconnected(
     // 客户端换了，上一次的识别结果和那一帧的人脸都不再代表当前画面。
     // 不清掉的话，客户端重连后画面没变，日志会漏掉这次状态刷新；
     // 而且"登记人脸"有可能把上一台机器留下的人脸登记进去。
-    lastRecognitionResult_.clear();
+    lastResult_ = FrameResult();
     lastEmbedding_ = cv::Mat();
 }
 
@@ -182,11 +183,11 @@ void ServerController::onMessageReceived(
         return;
     }
 
-    QString result;
+    FrameResult result;
 
     if (faces.empty())
     {
-        result = "未检测到人脸";
+        result.text = "未检测到人脸";
     }
     else
     {
@@ -210,28 +211,52 @@ void ServerController::onMessageReceived(
         // 所以每次都要更新。
         lastEmbedding_ = embedding.clone();
 
-        result = describeRecognition(embedding);
+        result = recognize(embedding);
+        result.hasFace = true;
     }
 
-    // 只在结果发生变化时记一行。日志记录的是状态变化，不是每一次采样，
-    // 否则每秒钟六行会把真正重要的信息冲走。
-    if (result != lastRecognitionResult_)
+    // 拿"是谁"来判断状态变没变，不能拿那行文字。相似度每帧都在第四位
+    // 小数上抖动，文字跟着变，每帧都会算成新状态，日志又会刷屏。
+    const bool stateChanged =
+        result.hasFace != lastResult_.hasFace
+        || result.matched != lastResult_.matched
+        || result.employeeId != lastResult_.employeeId;
+
+    if (stateChanged)
     {
-        lastRecognitionResult_ = result;
+        window_.appendStatusText(result.text);
 
-        window_.appendStatusText(result);
+        QString attendanceText;
+
+        // 考勤只在状态变化时判断一次。人一直站在镜头前不该反复记，
+        // 离开再回来才算一次新的出现，那时再交给限流窗口决定。
+        if (result.matched)
+        {
+            attendanceText = recordAttendance(
+                result.employeeId,
+                result.score);
+
+            window_.appendStatusText(attendanceText);
+        }
+
+        sendResult(peer, result, attendanceText);
     }
+
+    lastResult_ = result;
 }
 
-QString ServerController::describeRecognition(
+ServerController::FrameResult ServerController::recognize(
     const cv::Mat& embedding)
 {
+    FrameResult result;
+
     if (templates_.isEmpty())
     {
-        return "未识别：还没有登记过任何人脸模板";
+        result.text = "未识别：还没有登记过任何人脸模板";
+
+        return result;
     }
 
-    double bestScore = 0.0;
     QString bestName;
     QString bestEmployeeNo;
 
@@ -252,25 +277,101 @@ QString ServerController::describeRecognition(
                 embedding,
                 candidateEmbedding);
 
-        if (score > bestScore)
+        if (score > result.score)
         {
-            bestScore = score;
+            result.score = score;
+            result.employeeId = candidate.employeeId;
             bestName = candidate.name;
             bestEmployeeNo = candidate.employeeNo;
         }
     }
 
-    if (bestScore >= FaceEngine::kMatchThreshold)
+    if (result.score >= FaceEngine::kMatchThreshold)
     {
-        return QString("识别成功：%1（工号 %2），相似度 %3")
+        result.matched = true;
+        result.name = bestName;
+
+        result.text = QString("识别成功：%1（工号 %2），相似度 %3")
             .arg(bestName)
             .arg(bestEmployeeNo)
-            .arg(bestScore, 0, 'f', 4);
+            .arg(result.score, 0, 'f', 4);
+    }
+    else
+    {
+        result.text = QString("未识别：最高相似度 %1，低于阈值 %2")
+            .arg(result.score, 0, 'f', 4)
+            .arg(FaceEngine::kMatchThreshold, 0, 'f', 3);
     }
 
-    return QString("未识别：最高相似度 %1，低于阈值 %2")
-        .arg(bestScore, 0, 'f', 4)
-        .arg(FaceEngine::kMatchThreshold, 0, 'f', 3);
+    return result;
+}
+
+QString ServerController::recordAttendance(
+    qint64 employeeId,
+    double confidence)
+{
+    // 限流窗口。没有它，人离开两秒再回来就多记一条，
+    // 一天下来同一个人能被记几十次。
+    constexpr int kRepeatWindowSeconds = 120;
+
+    bool alreadyRecorded = false;
+
+    if (!attendanceRepository_.hasRecordWithin(
+            employeeId,
+            kRepeatWindowSeconds,
+            alreadyRecorded))
+    {
+        return "考勤查询失败："
+            + attendanceRepository_.lastError();
+    }
+
+    if (alreadyRecorded)
+    {
+        return QString("考勤未记录：%1 秒内已经记过一次")
+            .arg(kRepeatWindowSeconds);
+    }
+
+    // 目前只记签到。签退要等有了时间段规则再分。
+    if (!attendanceRepository_.addRecord(
+            employeeId,
+            "check_in",
+            confidence))
+    {
+        return "考勤写入失败："
+            + attendanceRepository_.lastError();
+    }
+
+    return "考勤已记录：签到";
+}
+
+void ServerController::sendResult(
+    const QString& peer,
+    const FrameResult& result,
+    const QString& attendanceText)
+{
+    QString identityText;
+
+    if (!result.hasFace)
+    {
+        identityText = "画面中无人";
+    }
+    else if (!result.matched)
+    {
+        identityText = "未识别";
+    }
+    else
+    {
+        identityText = result.name;
+    }
+
+    // 回传给客户端的格式：RESULT 加两个制表符分隔的字段，身份和考勤结论。
+    // 用制表符而不是换行，是因为整条消息就是一行，客户端拆起来最简单。
+    QByteArray payload = "RESULT\t";
+    payload.append(identityText.toUtf8());
+    payload.append("\t");
+    payload.append(attendanceText.toUtf8());
+
+    server_.sendToPeer(peer, payload);
 }
 
 void ServerController::onAddEmployee(

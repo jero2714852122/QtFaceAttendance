@@ -1,5 +1,7 @@
 #include "clientconnection.h"
 
+#include "frameprotocol.h"
+
 #include <QDataStream>
 #include <QIODevice>
 #include <QTcpSocket>
@@ -33,7 +35,25 @@ ClientConnection::ClientConnection(
 
 QString ClientConnection::peerName() const
 {
-    return socket_->peerAddress().toString();
+    // 带上端口号。只用 IP 的话，同一台机器上开出两个客户端就会同名，
+    // 服务端回传结果时就分不清该发给谁。
+    return socket_->peerAddress().toString()
+        + ":"
+        + QString::number(socket_->peerPort());
+}
+
+qint64 ClientConnection::sendPayload(
+    const QByteArray& payload)
+{
+    if (socket_ == nullptr
+        || socket_->state()
+            != QAbstractSocket::ConnectedState)
+    {
+        return -1;
+    }
+
+    return socket_->write(
+        FrameProtocol::pack(payload));
 }
 
 void ClientConnection::onReadyRead()

@@ -18,6 +18,8 @@ public:
 
     QString peerName() const;
 
+    qint64 sendPayload(const QByteArray& payload);
+
 signals:
     void messageReceived(
         const QByteArray& message);

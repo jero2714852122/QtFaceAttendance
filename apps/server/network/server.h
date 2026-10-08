@@ -22,6 +22,11 @@ public:
 
     void close();
 
+    // 把一条消息只回给指定的那个客户端。
+    qint64 sendToPeer(
+        const QString& peer,
+        const QByteArray& payload);
+
 signals:
     void listeningStarted(
         const QString& message);
