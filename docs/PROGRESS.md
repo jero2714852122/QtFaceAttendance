@@ -8,6 +8,7 @@
 - Last verified: five protocol cases and seven database cases pass under ctest, and the network still works after the decoder moved into `common`
 - Next action: Configure a Release build, run windeployqt, and check that the packaged folder starts on a machine with no Qt on its path
 - Pending release step: the Day 11, Day 12, and Day 13 change sets are committed but not pushed
+- Reference: `docs/TROUBLESHOOTING.md` collects every problem hit so far, each with its symptom, cause, fix, and how to avoid it next time
 
 ## Day 13 Findings
 
