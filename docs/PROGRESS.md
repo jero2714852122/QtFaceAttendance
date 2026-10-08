@@ -3,11 +3,21 @@
 ## Current State
 
 - Date: 2026-10-08
-- Stage: Day 10 essentially complete; Day 11 is next
-- Active goal: Recognize a registered employee from a camera frame and gate the result on the documented 0.363 cosine threshold
-- Last verified: registration, persistence, and recognition all work end to end, and the client now streams frames instead of sending one
-- Next action: Announce Day 11, then write a rate-limited row into `attendance_records` and send the recognition result back to the client
-- Pending release step: the Day 10 change set is committed locally but not pushed
+- Stage: Day 11 complete; Day 12 is next
+- Active goal: Turn a successful recognition into a rate-limited attendance row and show the outcome on the client
+- Last verified: the whole loop runs end to end. The client streams frames, the server recognizes, writes a rate-limited attendance row, and returns the outcome to the client
+- Next action: Announce Day 12 and harden the failure paths: camera, model, database, network, and shutdown
+- Pending release step: the Day 11 change set is committed but not pushed
+
+## Day 11 Findings
+
+- Deduplicating log lines by their display text does not work. A one step brightness change moved the similarity from 0.0493 to 0.0577, which produced a new line; a live camera shifts the value every frame. The deduplication key is now the identity (`hasFace`, `matched`, `employeeId`) rather than the text.
+- Attendance is rate limited by querying the database rather than by keeping a timestamp in memory, so the rule survives a server restart.
+- Time comparison happens inside SQLite (`created_at > datetime('now', '-120 seconds')`). `created_at` comes from `CURRENT_TIMESTAMP`, which is UTC, and `datetime('now')` is also UTC. Mixing in Qt's local time would be off by eight hours.
+- The server now talks back to the client. The payload is `RESULT` followed by two tab separated fields: identity and attendance outcome. Tab, not newline, because one message stays one line.
+- `ClientConnection::peerName()` now includes the port, so two clients on the same machine no longer share a name and replies cannot go to the wrong one.
+- The client keeps the model loading failure message visible. It used to be replaced by a later network status message, which pointed at the wrong problem.
+- Deferred to Day 13: the frame decoding loop is now duplicated in `ClientConnection` and `NetworkClient`; it should move into `common` so both sides share one copy.
 
 ## Day 10 Findings
 
@@ -224,7 +234,7 @@
 - [x] Confirm the duplicate `employee_no` rejection in the running server.
 - [x] Add a friendly duplicate-employee-number check before the insert.
 - [x] Commit and push the server employee-management increment as `0384f8e`.
-- [ ] Commit and push the update feature and the two ONNX model files.
+- [x] Commit and push the update feature and the two ONNX model files as `c3ca891`.
 
 ## Day 10 Checklist
 
@@ -241,4 +251,14 @@
 - [x] Store and reload a template through the database without losing precision.
 - [x] Replace the client's Haar detector with YuNet so both sides judge faces the same way.
 - [x] Stream frames on an interval instead of sending a single frame per camera session.
-- [ ] Review the client's model-load failure message so it cannot be overwritten.
+- [x] Review the client's model-load failure message so it cannot be overwritten.
+
+## Day 11 Checklist
+
+- [x] Explain why a repeated event must collapse into a single attendance row.
+- [x] Insert an attendance row with the employee id, type, and the similarity at the time.
+- [x] Rate limit repeat attendance by querying the database, not by holding a timestamp in memory.
+- [x] Compare timestamps inside SQLite so both sides use the same time zone.
+- [x] Send the recognition and attendance outcome back to the client over the existing framed protocol.
+- [x] Show the returned result in the client window.
+- [x] Fix the deduplication key so a live camera cannot flood the log.
