@@ -37,7 +37,7 @@ add_custom_command(TARGET face_attendance_client POST_BUILD
     # 只在目标目录还没有 config.ini 时才放默认配置，
     # 免得编译一次就把用户改过的真实 IP 冲掉。
     COMMAND ${CMAKE_COMMAND}
-        -DSOURCE_CONFIG=${CMAKE_SOURCE_DIR}/config.ini
+        -DSOURCE_CONFIG=${CMAKE_SOURCE_DIR}/config.ini.default
         -DTARGET_DIR=$<TARGET_FILE_DIR:face_attendance_client>
         -P ${CMAKE_SOURCE_DIR}/cmake/copy-default-config.cmake
 
