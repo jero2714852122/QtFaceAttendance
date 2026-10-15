@@ -4,8 +4,16 @@ find_package(Qt6 6.9 REQUIRED COMPONENTS Test Sql)
 add_executable(tst_frameprotocol
     tst_frameprotocol.cpp
 )
+add_executable(tst_appconfig
+    tst_appconfig.cpp
+)
 
 target_link_libraries(tst_frameprotocol
+    PRIVATE
+        Qt6::Test
+        face_attendance_common
+)
+target_link_libraries(tst_appconfig
     PRIVATE
         Qt6::Test
         face_attendance_common
@@ -34,7 +42,7 @@ target_link_libraries(tst_database
 
 # 测试程序得在自己的目录里找到 Qt 的 DLL，否则 ctest 一跑就是
 # "找不到 Qt6Core.dll"。SQLite 驱动属于插件，Qt 会按安装目录自己找。
-foreach(test_target tst_frameprotocol tst_database)
+foreach(test_target tst_frameprotocol tst_appconfig tst_database)
     set_target_properties(${test_target} PROPERTIES
         WIN32_EXECUTABLE FALSE
     )
@@ -44,10 +52,14 @@ foreach(test_target tst_frameprotocol tst_database)
             $<TARGET_FILE:Qt6::Core>
             $<TARGET_FILE_DIR:${test_target}>
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_FILE:Qt6::Network>
+            $<TARGET_FILE_DIR:${test_target}>
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
             $<TARGET_FILE:Qt6::Test>
             $<TARGET_FILE_DIR:${test_target}>
     )
 endforeach()
+
 
 add_custom_command(TARGET tst_database POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
@@ -57,3 +69,4 @@ add_custom_command(TARGET tst_database POST_BUILD
 
 add_test(NAME frameprotocol COMMAND tst_frameprotocol)
 add_test(NAME database COMMAND tst_database)
+add_test(NAME appconfig COMMAND tst_appconfig)
