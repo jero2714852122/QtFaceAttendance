@@ -1,12 +1,15 @@
 add_library(face_attendance_common STATIC
     frameprotocol.h
     frameprotocol.cpp
+    appconfig.h
+    appconfig.cpp
 )
 
 target_link_libraries(face_attendance_common
     PUBLIC
         Qt6::Core
-)
+        Qt6::Network
+    )
 
 target_include_directories(face_attendance_common
     PUBLIC

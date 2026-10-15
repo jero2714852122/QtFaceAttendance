@@ -34,6 +34,13 @@ add_custom_command(TARGET face_attendance_client POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         ${CMAKE_SOURCE_DIR}/assets/face_detection_yunet_2023mar.onnx
         $<TARGET_FILE_DIR:face_attendance_client>/models/face_detection_yunet_2023mar.onnx
+    # 只在目标目录还没有 config.ini 时才放默认配置，
+    # 免得编译一次就把用户改过的真实 IP 冲掉。
+    COMMAND ${CMAKE_COMMAND}
+        -DSOURCE_CONFIG=${CMAKE_SOURCE_DIR}/config.ini
+        -DTARGET_DIR=$<TARGET_FILE_DIR:face_attendance_client>
+        -P ${CMAKE_SOURCE_DIR}/cmake/copy-default-config.cmake
+
 )
 
 set_target_properties(face_attendance_client PROPERTIES

@@ -1,6 +1,7 @@
 #include <QApplication>
 #include <QCoreApplication>
 
+#include "appconfig.h"
 #include "camera/cameracontroller.h"
 #include "controller/attendancecontroller.h"
 #include "network/networkclient.h"
@@ -15,6 +16,19 @@ int main(int argc, char* argv[])
     CameraController camera;
     FaceDetector faceDetector;
     NetworkClient networkClient;
+
+    // 配置先读一次，后面要用地址端口的地方都从它取。
+    const AppConfig config = AppConfig::load();
+
+    // 客户端只有一个状态栏标签，配置问题合成一行显示。
+    // 注意：下面模型加载失败时会盖掉它，因为那是更致命的问题。
+    if (!config.notes().isEmpty())
+    {
+        window.setStatusText(
+            QStringLiteral("配置：")
+            + config.notes().join(QStringLiteral("；")));
+    }
+
     //资源加载，提供依赖
     const QString modelPath =
         QCoreApplication::applicationDirPath()
@@ -33,10 +47,10 @@ int main(int argc, char* argv[])
         faceDetector,
         networkClient,
         &window);
-    //启动网络连接
+    //启动网络连接：地址和端口来自 config.ini
     networkClient.connectToServer(
-        "127.0.0.1",
-        45454);
+        config.client().serverAddress,
+        config.client().serverPort);
 
     window.show();
     return app.exec();
