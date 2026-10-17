@@ -314,34 +314,27 @@ QString ServerController::recordAttendance(
     // 一天下来同一个人能被记几十次。
     constexpr int kRepeatWindowSeconds = 120;
 
-    bool alreadyRecorded = false;
+    bool inserted = false;
 
-    if (!attendanceRepository_.hasRecordWithin(
+    if (!attendanceRepository_.addRecordUnlessRecent(
             employeeId,
+            "check_in",
+            confidence,
             kRepeatWindowSeconds,
-            alreadyRecorded))
+            inserted))
     {
-        return "考勤查询失败："
-            + attendanceRepository_.lastError();
+        return "考勤写入失败："
+               + attendanceRepository_.lastError();
     }
 
-    if (alreadyRecorded)
+    if (!inserted)
     {
         return QString("考勤未记录：%1 秒内已经记过一次")
             .arg(kRepeatWindowSeconds);
     }
 
-    // 目前只记签到。签退要等有了时间段规则再分。
-    if (!attendanceRepository_.addRecord(
-            employeeId,
-            "check_in",
-            confidence))
-    {
-        return "考勤写入失败："
-            + attendanceRepository_.lastError();
-    }
-
     return "考勤已记录：签到";
+
 }
 
 void ServerController::sendResult(
@@ -449,6 +442,7 @@ void ServerController::onDeleteEmployee(
         "员工删除成功");
 
     loadEmployees();
+    loadTemplates();//删除后防止内存还认人
 }
 
 void ServerController::onUpdateEmployee(

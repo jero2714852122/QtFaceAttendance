@@ -141,6 +141,16 @@ bool DatabaseManager::initializeSchema()
                     REFERENCES employees(id)
                     ON DELETE CASCADE
             )
+        )",
+        R"(
+            CREATE INDEX IF NOT EXISTS idx_attendance_employee_time
+                ON attendance_records (employee_id, created_at)
+        )",
+
+        // SQLite 不会为外键自动建索引。没有它，删除员工时的级联删除,会在 face_templates 上做一次全表扫描。
+        R"(
+            CREATE INDEX IF NOT EXISTS idx_face_templates_employee
+                ON face_templates (employee_id)
         )"
     };
 

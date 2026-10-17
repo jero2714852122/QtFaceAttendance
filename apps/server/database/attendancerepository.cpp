@@ -41,6 +41,51 @@ bool AttendanceRepository::addRecord(
     return true;
 }
 
+bool AttendanceRepository::addRecordUnlessRecent(
+    qint64 employeeId,
+    const QString& attendanceType,
+    double confidence,
+    int windowSeconds,
+    bool& inserted)
+{
+    lastError_.clear();
+    inserted = false;
+
+    QSqlQuery query(
+        databaseManager_.database());
+
+    query.prepare(
+        "INSERT INTO attendance_records "
+        "(employee_id, attendance_type, confidence) "
+        "SELECT :employee_id, :attendance_type, :confidence "
+        "WHERE NOT EXISTS ("
+        "    SELECT 1 FROM attendance_records "
+        "    WHERE employee_id = :employee_id "
+        "      AND created_at > datetime('now', :offset)"
+        ")");
+
+    query.bindValue(":employee_id", employeeId);
+    query.bindValue(":attendance_type", attendanceType);
+    query.bindValue(":confidence", confidence);
+
+    query.bindValue(
+        ":offset",
+        QString("-%1 seconds").arg(windowSeconds));
+
+    if (!query.exec())
+    {
+        lastError_ = query.lastError().text();
+
+        return false;
+    }
+
+    // 插进去了是 1；被 WHERE NOT EXISTS 挡掉是 0。
+    inserted = query.numRowsAffected() > 0;
+
+    return true;
+}
+
+
 bool AttendanceRepository::hasRecordWithin(
     qint64 employeeId,
     int seconds,

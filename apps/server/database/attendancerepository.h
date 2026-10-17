@@ -15,8 +15,15 @@ public:
         const QString& attendanceType,
         double confidence);
 
-    // 查某人在最近 seconds 秒内有没有记录过。found 表示"查到了"，
-    // 和返回值含义不同：返回 false 是查询本身失败。
+
+    // 单条语句完成"检查窗口 + 写入"，避免先查后插之间的竞态。
+    bool addRecordUnlessRecent(
+        qint64 employeeId,
+        const QString& attendanceType,
+        double confidence,
+        int windowSeconds,
+        bool& inserted);
+
     bool hasRecordWithin(
         qint64 employeeId,
         int seconds,
