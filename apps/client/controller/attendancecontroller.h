@@ -24,6 +24,7 @@ public:
         CameraController& camera,
         FaceDetector& faceDetector,
         NetworkClient& networkClient,
+        int cameraIndex,
         QObject* parent = nullptr);
 
 public slots:
@@ -41,6 +42,9 @@ private:
     CameraController& camera_;
     FaceDetector& faceDetector_;
     NetworkClient& networkClient_;
+
+    // 用哪个摄像头，来自 config.ini 的 client.camera_index。
+    int cameraIndex_ = 0;
 
     QTimer previewTimer_;
     QElapsedTimer detectionClock_;

@@ -14,6 +14,9 @@ namespace
 constexpr qlonglong kMinPort = 1;
 constexpr qlonglong kMaxPort = 65535;
 
+// 摄像头编号的范围。一台机器接十台以上的摄像头不现实，超出这个范围基本是写错了。
+constexpr qlonglong kMaxCameraIndex = 9;
+
 // 把一个配置值读成端口。返回 false 表示这个值不能用，调用方保留默认值。
 //
 // 先转成 qlonglong（装得下负数，范围也远大于端口），再自己判范围。
@@ -140,6 +143,33 @@ AppConfig AppConfig::load(const QString& path)
             config.notes_.append(
                 QStringLiteral("client.server_port 不可用，沿用默认 %1")
                     .arg(config.client_.serverPort));
+        }
+    }
+
+    // 客户端：摄像头编号。
+    //
+    // 这一项是后加的配置项，别人的 config.ini 里没有它很正常，所以"缺失"时保持
+    // 沉默，直接沿用默认值；只有"写了但写错"才记一条，免得每次启动都刷一句噪音。
+    {
+        const QVariant raw =
+            settings.value(QStringLiteral("camera_index"));
+
+        if (raw.isValid())
+        {
+            bool converted = false;
+            const qlonglong index = raw.toLongLong(&converted);
+
+            if (converted && index >= 0 && index <= kMaxCameraIndex)
+            {
+                config.client_.cameraIndex = static_cast<int>(index);
+            }
+            else
+            {
+                config.notes_.append(
+                    QStringLiteral("client.camera_index=\"%1\" 不可用，沿用默认 %2")
+                        .arg(raw.toString())
+                        .arg(config.client_.cameraIndex));
+            }
         }
     }
 

@@ -46,6 +46,7 @@ int main(int argc, char* argv[])
         camera,
         faceDetector,
         networkClient,
+        config.client().cameraIndex,
         &window);
     //启动网络连接：地址和端口来自 config.ini
     networkClient.connectToServer(

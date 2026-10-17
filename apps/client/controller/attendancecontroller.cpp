@@ -15,12 +15,14 @@ AttendanceController::AttendanceController(
     CameraController& camera,
     FaceDetector& faceDetector,
     NetworkClient& networkClient,
+    int cameraIndex,
     QObject* parent)
     : QObject(parent)
     , window_(window)
     , camera_(camera)
     , faceDetector_(faceDetector)
     , networkClient_(networkClient)
+    , cameraIndex_(cameraIndex)
     , previewTimer_(this)
 {
     previewTimer_.setInterval(33);
@@ -71,10 +73,13 @@ void AttendanceController::startCamera()
         return;
     }
 
-    if (!camera_.open(0))
+    if (!camera_.open(cameraIndex_))
     {
+        // 把编号写进提示里：编号填错时，看到"摄像头 1"才知道是 config.ini 那一行的问题。
         window_.setStatusText(
-            "状态：摄像头打开失败");
+            QStringLiteral("状态：摄像头 %1 打开失败")
+                .arg(cameraIndex_));
+
         return;
     }
 
@@ -134,7 +139,8 @@ void AttendanceController::processFrame()
                 detectedFaces_.size()));
     }
 
-    QImage image =
+    // 预览图带绿框，只给本地界面看。
+    const QImage previewImage =
         FrameProcessor::toPreviewImage(
             frame,
             detectedFaces_);
@@ -152,9 +158,10 @@ void AttendanceController::processFrame()
     // 人已经走开了。用带宽换正确性，本机演示完全负担得起。
     if (networkClient_.isConnected() && sendDue)
     {
+        // 上传用不画框的原始画面。
         QByteArray jpegBytes =
             FrameProcessor::encodeJpeg(
-                image,
+                FrameProcessor::toImage(frame),
                 80);
 
         if (!jpegBytes.isEmpty())
@@ -172,7 +179,7 @@ void AttendanceController::processFrame()
         }
     }
 
-    window_.showPreviewImage(image);
+    window_.showPreviewImage(previewImage);
 }
 
 void AttendanceController::onNetworkConnected()

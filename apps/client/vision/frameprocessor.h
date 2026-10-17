@@ -17,6 +17,9 @@ public:
         const cv::Mat& bgrFrame,
         const std::vector<cv::Rect>& faces);
 
+    static QImage toImage(
+        const cv::Mat& bgrFrame);
+
     static QByteArray encodeJpeg(
         const QImage& image,
         int quality = 80);

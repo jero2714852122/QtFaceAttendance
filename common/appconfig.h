@@ -19,11 +19,15 @@ public:
         quint16 listenPort = 45454;
     };
 
-    // 客户端要的东西：去连哪个地址、哪个端口。
+    // 客户端要的东西：去连哪个地址、哪个端口，以及用哪个摄像头。
     struct ClientSettings
     {
         QString serverAddress = QStringLiteral("127.0.0.1");
         quint16 serverPort = 45454;
+
+        // 摄像头编号。0 一般是内置摄像头，外接的 USB 摄像头通常是 1 或 2。
+        // 编号不存在时不会崩，CameraController::open() 会返回失败并提示。
+        int cameraIndex = 0;
     };
 
     // 读配置文件。

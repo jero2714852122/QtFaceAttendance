@@ -55,6 +55,28 @@ QImage FrameProcessor::toPreviewImage(
     return image.copy();
 }
 
+QImage FrameProcessor::toImage(
+    const cv::Mat& bgrFrame)
+{
+    // 和 toPreviewImage 的唯一区别：这里不画任何辅助线。
+    // 框是给本地界面看的，不属于画面内容，不能跟着上传。
+    cv::Mat rgbFrame;
+
+    cv::cvtColor(
+        bgrFrame,
+        rgbFrame,
+        cv::COLOR_BGR2RGB);
+
+    QImage image(
+        rgbFrame.data,
+        rgbFrame.cols,
+        rgbFrame.rows,
+        static_cast<qsizetype>(rgbFrame.step),
+        QImage::Format_RGB888);
+
+    return image.copy();
+}
+
 QByteArray FrameProcessor::encodeJpeg(
     const QImage& image,
     int quality)
