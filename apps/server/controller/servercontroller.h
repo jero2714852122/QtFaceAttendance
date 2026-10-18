@@ -3,6 +3,8 @@
 #include <QByteArray>
 #include <QObject>
 #include <QString>
+#include <QHash>
+
 #include "database/employeerepository.h"
 #include "vision/faceengine.h"
 #include "database/facetemplaterepository.h"
@@ -90,9 +92,14 @@ private:
     DatabaseManager& database_;
     EmployeeRepository employeeRepository_;
     FaceEngine faceEngine_;
-    cv::Mat lastEmbedding_;
+    // 每个客户端最近一帧的人脸特征。
+    QHash<QString, cv::Mat> lastEmbeddingByPeer_;
+
+    // 最近一次收到人脸的客户端。登记时用它，并且要告诉操作者用的是谁。
+    QString lastActivePeer_;
+
     FaceTemplateRepository faceTemplateRepository_;
     QList<FaceTemplate> templates_;
     AttendanceRepository attendanceRepository_;
-    FrameResult lastResult_;
+    QHash<QString, FrameResult> lastResultByPeer_;
 };

@@ -140,11 +140,19 @@ void ServerController::onClientDisconnected(
     window_.appendStatusText(
         "客户端已断开：" + peer);
 
-    // 客户端换了，上一次的识别结果和那一帧的人脸都不再代表当前画面。
-    // 不清掉的话，客户端重连后画面没变，日志会漏掉这次状态刷新；
-    // 而且"登记人脸"有可能把上一台机器留下的人脸登记进去。
-    lastResult_ = FrameResult();
-    lastEmbedding_ = cv::Mat();
+    // 这个客户端的状态跟着它走，留着只会一直占内存。
+    lastResultByPeer_.remove(peer);
+
+    // 人脸还留着：登记功能要用"最近一帧的人脸"。
+    // 下一步再把这块也改成按客户端分开。
+    lastEmbeddingByPeer_.remove(peer);
+
+    if (lastActivePeer_ == peer)
+    {
+        lastActivePeer_.clear();
+    }
+
+
 }
 
 void ServerController::onClientError(
@@ -206,10 +214,10 @@ void ServerController::onMessageReceived(
 
         const cv::Mat embedding =
             bestFace->embedding;
-
         // 登记功能用的永远是"最近一帧的人脸"，跟日志是否输出无关，
-        // 所以每次都要更新。
-        lastEmbedding_ = embedding.clone();
+        // 所以每次都要更新。按客户端分开存，最后来的那个记成"活跃源头"。
+        lastEmbeddingByPeer_.insert(peer, embedding.clone());
+        lastActivePeer_ = peer;
 
         result = recognize(embedding);
         result.hasFace = true;
@@ -217,10 +225,14 @@ void ServerController::onMessageReceived(
 
     // 拿"是谁"来判断状态变没变，不能拿那行文字。相似度每帧都在第四位
     // 小数上抖动，文字跟着变，每帧都会算成新状态，日志又会刷屏。
+    // 只跟"这个客户端"上一帧比，不跟别的客户端比。
+    const FrameResult previous = lastResultByPeer_.value(peer);
+
     const bool stateChanged =
-        result.hasFace != lastResult_.hasFace
-        || result.matched != lastResult_.matched
-        || result.employeeId != lastResult_.employeeId;
+        result.hasFace != previous.hasFace
+        || result.matched != previous.matched
+        || result.employeeId != previous.employeeId;
+
 
     if (stateChanged)
     {
@@ -242,7 +254,7 @@ void ServerController::onMessageReceived(
         sendResult(peer, result, attendanceText);
     }
 
-    lastResult_ = result;
+    lastResultByPeer_.insert(peer, result);
 }
 
 ServerController::FrameResult ServerController::recognize(
@@ -507,13 +519,22 @@ void ServerController::loadTemplates()
 void ServerController::onRegisterFace(
     qint64 id)
 {
-    if (lastEmbedding_.empty())
+    // 登记用的是"最近一帧"的人脸。多客户端时，必须说清这一帧来自谁，
+    // 否则会把 A 的脸登记成 B 的人。
+    const cv::Mat embedding =
+        lastEmbeddingByPeer_.value(lastActivePeer_);
+
+    if (embedding.empty())
     {
         window_.appendStatusText(
             "登记失败：还没有收到带人脸的画面");
 
         return;
     }
+
+    window_.appendStatusText(
+        "登记来源：" + lastActivePeer_);
+
 
     // 一张脸只能属于一个工号。登记前先跟已有的模板比一遍：同一张脸挂在
     // 两个人名下，考勤就会记到错的人头上，而且事后完全没法分辨是谁。
@@ -536,7 +557,7 @@ void ServerController::onRegisterFace(
 
         const double score =
             faceEngine_.similarity(
-                lastEmbedding_,
+                embedding,
                 candidateEmbedding);
 
         if (score >= FaceEngine::kMatchThreshold)
@@ -553,7 +574,7 @@ void ServerController::onRegisterFace(
 
     if (!faceTemplateRepository_.saveTemplate(
             id,
-            FaceEngine::toBytes(lastEmbedding_)))
+            FaceEngine::toBytes(embedding)))
     {
         window_.appendStatusText(
             "人脸登记失败："
