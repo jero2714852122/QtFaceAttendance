@@ -1,28 +1,42 @@
 #include "networkclient.h"
-
+#include "logger.h"
 #include "frameprotocol.h"
 
 namespace
 {
-// 断线后每隔几秒重试一次。演示时经常是先开客户端再开服务端，
-// 没有自动重连的话，每次都得手动把客户端重启一遍。
-constexpr int kReconnectIntervalMs = 3000;
+// 断线重连的退避参数：从 1 秒起，每失败一次翻一倍，最多 30 秒。
+// 固定间隔的话，服务端停一小时客户端就白撞一千多次；几百个客户端
+// 同时恢复时还会一起撞上来，把刚恢复的服务端压垮。
+constexpr int kInitialReconnectDelayMs = 1000;
+constexpr int kMaxReconnectDelayMs = 30000;
+// 心跳间隔。客户端每隔这么久发一条 PING，服务端收到任何消息
+// 都算"这个客户端还活着"。太短浪费流量，太长发现掉线太慢。
+constexpr int kHeartbeatIntervalMs = 5000;
+
 }
 
 NetworkClient::NetworkClient(QObject* parent)
     : QObject(parent)
     , reconnectTimer_(this)
 {
-    reconnectTimer_.setInterval(kReconnectIntervalMs);
 
     QObject::connect(
         &socket_,
         &QTcpSocket::connected,
         this,
         [this]() {
+            // 连上了就把退避清零，下次断线还从 1 秒开始。
+            // 忘了这一句，跑一会儿就会永远卡在 30 秒才重连一次。
+            reconnectDelayMs_ = kInitialReconnectDelayMs;
+
             reconnectTimer_.stop();
+            heartbeatTimer_.start();
             emit connected();
+            Logger::info(
+                QString("已连接 %1:%2").arg(host_).arg(port_));
+
         });
+
 
     QObject::connect(
         &socket_,
@@ -30,7 +44,11 @@ NetworkClient::NetworkClient(QObject* parent)
         this,
         [this]() {
             startReconnectTimer();
+            heartbeatTimer_.stop();
             emit disconnected();
+            Logger::warning(
+                QString("连接断开 %1:%2").arg(host_).arg(port_));
+
         });
 
     QObject::connect(
@@ -39,7 +57,14 @@ NetworkClient::NetworkClient(QObject* parent)
         this,
         [this](QAbstractSocket::SocketError) {
             startReconnectTimer();
+            heartbeatTimer_.stop();
             emit connectionError(socket_.errorString());
+            Logger::error(
+                QString("连接失败 %1:%2：%3")
+                    .arg(host_)
+                    .arg(port_)
+                    .arg(socket_.errorString()));
+
         });
 
     QObject::connect(
@@ -53,6 +78,14 @@ NetworkClient::NetworkClient(QObject* parent)
         &QTimer::timeout,
         this,
         &NetworkClient::onReconnectTimeout);
+
+    heartbeatTimer_.setInterval(kHeartbeatIntervalMs);
+    QObject::connect(
+    &heartbeatTimer_,
+    &QTimer::timeout,
+    this,
+    &NetworkClient::onHeartbeatTimeout);
+
 }
 
 void NetworkClient::connectToServer(const QString& host, quint16 port)
@@ -118,8 +151,16 @@ void NetworkClient::startReconnectTimer()
         return;
     }
 
+    reconnectTimer_.setInterval(reconnectDelayMs_);
     reconnectTimer_.start();
+
+    // 先排下一次的等待时长，翻一倍但不封顶超过 30 秒。
+    // 放在 start 之后，是因为这一次用的还是当前值。
+    reconnectDelayMs_ = qMin(
+        reconnectDelayMs_ * 2,
+        kMaxReconnectDelayMs);
 }
+
 
 void NetworkClient::onReconnectTimeout()
 {
@@ -134,4 +175,15 @@ void NetworkClient::onReconnectTimeout()
     // 调用 connectToHost 有时会卡在旧状态里连不上。
     socket_.abort();
     socket_.connectToHost(host_, port_);
+}
+void NetworkClient::onHeartbeatTimeout()
+{
+    if (!isConnected())
+    {
+        return;
+    }
+
+    // 心跳就是一条普通的文本消息。服务端那边收到任何消息都算活着，
+    // 所以不用为它发明新协议，也不会影响 JPEG 帧的处理。
+    sendPayload("PING\n");
 }

@@ -26,6 +26,10 @@ public:
     qint64 sendToPeer(
         const QString& peer,
         const QByteArray& payload);
+    // 主动断开指定的客户端。找不到返回 false。
+    bool disconnectPeer(
+        const QString& peer);
+
 
 signals:
     void listeningStarted(

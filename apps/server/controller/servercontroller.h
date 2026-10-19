@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QString>
 #include <QHash>
+#include <QTimer>
 
 #include "database/employeerepository.h"
 #include "vision/faceengine.h"
@@ -72,6 +73,7 @@ private slots:
 
     void onFrameAnalysisFailed(
         const QString& message);
+    void onHeartbeatCheck();
 
 
 private:
@@ -118,6 +120,10 @@ private:
     QHash<QString, FrameResult> lastResultByPeer_;
     QThread* analysisThread_ = nullptr;
     RecognitionWorker* analysisWorker_ = nullptr;
+    // 每个客户端最后一次出声的时间（毫秒时间戳）。
+    QHash<QString, qint64> lastSeenByPeer_;
+
+    QTimer heartbeatCheckTimer_;
 
 
 };

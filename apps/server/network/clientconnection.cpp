@@ -109,3 +109,11 @@ void ClientConnection::onSocketError()
         + "："
         + socket_->errorString());
 }
+
+void ClientConnection::close()
+{
+    // abort 是立刻断开，不走"发完再关"的礼貌流程。
+    // 对端已经不响应了，再等它收完没有意义。
+    socket_->abort();
+}
+

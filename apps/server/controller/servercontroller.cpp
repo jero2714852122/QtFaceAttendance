@@ -8,7 +8,8 @@
 #include <QDir>
 #include <QElapsedTimer>
 #include <QThread>
-
+#include <QDateTime>
+#include <QStringList>
 #include "vision/recognitionworker.h"
 
 
@@ -90,6 +91,17 @@ ServerController::ServerController(
         &ServerWindow::registerFaceRequested,
         this,
         &ServerController::onRegisterFace);
+
+    heartbeatCheckTimer_.setInterval(5000);
+
+    QObject::connect(
+        &heartbeatCheckTimer_,
+        &QTimer::timeout,
+        this,
+        &ServerController::onHeartbeatCheck);
+
+    heartbeatCheckTimer_.start();
+
 }
 
 ServerController::~ServerController()
@@ -152,6 +164,10 @@ void ServerController::onClientConnected(
 {
     window_.appendStatusText(
         "客户端已连接：" + peer);
+    lastSeenByPeer_.insert(
+        peer,
+        QDateTime::currentMSecsSinceEpoch());
+
 }
 
 void ServerController::onClientDisconnected(
@@ -186,6 +202,13 @@ void ServerController::onMessageReceived(
     const QString& peer,
     const QByteArray& message)
 {
+    // 收到任何消息都算"这个客户端还活着"，所以这一句必须在协议分流之前。
+    // 放在下面那个 if 之后的话，PING 这种文本消息就更新不到时间戳，
+    // 结果所有客户端都会在 15 秒后被误判成超时。
+    lastSeenByPeer_.insert(
+        peer,
+        QDateTime::currentMSecsSinceEpoch());
+
     // 协议分流：JPEG\n 开头的是图像帧，其他的是文本控制消息。
     // 图像帧每秒来两帧，不能按帧记日志，所以这里不打印字节数。
     if (!message.startsWith("JPEG\n"))
@@ -218,6 +241,8 @@ void ServerController::onMessageReceived(
             worker->analyze(peer, jpegFrame);
         },
         Qt::QueuedConnection);
+    lastSeenByPeer_.remove(peer);
+
 }
 
 void ServerController::onFrameAnalyzed(
@@ -279,6 +304,36 @@ void ServerController::onFrameAnalysisFailed(
         + message);
 }
 
+void ServerController::onHeartbeatCheck()
+{
+    // 三个心跳周期没出声就算掉线。给两次容忍，避免网络抖一下就把人踢了。
+    constexpr qint64 kTimeoutMs = 15000;
+
+    const qint64 now = QDateTime::currentMSecsSinceEpoch();
+
+    // 先收集再断开。disconnectPeer 会触发 disconnected 信号，
+    // 那个槽里会删 lastSeenByPeer_ 的元素——边遍历边删容器，迭代器会失效。
+    QStringList timedOut;
+
+    for (auto it = lastSeenByPeer_.cbegin();
+         it != lastSeenByPeer_.cend();
+         ++it)
+    {
+        if (now - it.value() > kTimeoutMs)
+        {
+            timedOut.append(it.key());
+        }
+    }
+
+    for (const QString& peer : timedOut)
+    {
+        window_.appendStatusText(
+            QString("客户端心跳超时，主动断开：%1")
+                .arg(peer));
+
+        server_.disconnectPeer(peer);
+    }
+}
 
 ServerController::FrameResult ServerController::recognize(
     const cv::Mat& embedding)

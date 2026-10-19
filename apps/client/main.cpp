@@ -1,6 +1,6 @@
 #include <QApplication>
 #include <QCoreApplication>
-
+#include "logger.h"
 #include "appconfig.h"
 #include "camera/cameracontroller.h"
 #include "controller/attendancecontroller.h"
@@ -12,6 +12,14 @@ int main(int argc, char* argv[])
 {
     //创建各个模块的对象，程序组装
     QApplication app(argc, argv);
+
+    // 必须在 QApplication 构造之后：applicationDirPath() 是从应用程序实例里
+    // 取的，实例还没建出来时它返回空字符串，路径拼出来是 "/logs/client.log"，
+    // 打开必然失败，结果就是一条日志都没有。
+    Logger::open(
+        QCoreApplication::applicationDirPath()
+        + "/logs/client.log");
+
     MainWindow window;
     CameraController camera;
     FaceDetector faceDetector;
@@ -54,5 +62,10 @@ int main(int argc, char* argv[])
         config.client().serverPort);
 
     window.show();
-    return app.exec();
+    const int exitCode = app.exec();
+
+    Logger::close();
+
+    return exitCode;
+
 }

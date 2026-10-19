@@ -26,14 +26,19 @@ signals:
 private slots:
     void onReadyRead();
     void onReconnectTimeout();
+    void onHeartbeatTimeout();
 
 private:
     void startReconnectTimer();
 
     QTcpSocket socket_;
     QByteArray receiveBuffer_;
+    // 下一次重连要等多久。失败一次翻一倍，连上就重置。
+    int reconnectDelayMs_ = 1000;
 
     QString host_;
     quint16 port_ = 0;
     QTimer reconnectTimer_;
+    QTimer heartbeatTimer_;
+
 };

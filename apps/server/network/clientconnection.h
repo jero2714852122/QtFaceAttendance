@@ -20,6 +20,9 @@ public:
 
     qint64 sendPayload(const QByteArray& payload);
 
+    // 主动断开这条连接。心跳超时时由服务端调用。
+    void close();
+
 signals:
     void messageReceived(
         const QByteArray& message);
@@ -34,6 +37,7 @@ private slots:
     void onReadyRead();
     void onDisconnected();
     void onSocketError();
+
 
 private:
     void processFrames();

@@ -54,6 +54,23 @@ qint64 Server::sendToPeer(
     return -1;
 }
 
+bool Server::disconnectPeer(
+    const QString& peer)
+{
+    for (ClientConnection* connection : connections_)
+    {
+        if (connection->peerName() == peer)
+        {
+            connection->close();
+
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
 void Server::onNewConnection()
 {
     while (server_.hasPendingConnections())

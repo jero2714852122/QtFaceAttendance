@@ -1,5 +1,5 @@
 #include "serverwindow.h"
-
+#include "logger.h"
 #include <QLabel>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
@@ -296,6 +296,7 @@ void ServerWindow::appendStatusText(
     const QString& text)
 {
     statusView_->appendPlainText(text);
+    Logger::info(text);
 }
 
 void ServerWindow::setEmployeeCount(

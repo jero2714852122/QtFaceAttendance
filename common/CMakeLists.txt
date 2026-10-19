@@ -3,6 +3,7 @@ add_library(face_attendance_common STATIC
     frameprotocol.cpp
     appconfig.h
     appconfig.cpp
+    logger.h logger.cpp
 )
 
 target_link_libraries(face_attendance_common
