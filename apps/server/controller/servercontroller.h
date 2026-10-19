@@ -12,6 +12,9 @@
 class DatabaseManager;
 class Server;
 class ServerWindow;
+class RecognitionWorker;
+class QThread;
+
 
 class ServerController : public QObject
 {
@@ -23,6 +26,8 @@ public:
         ServerWindow& window,
         DatabaseManager& database,
         QObject* parent = nullptr);
+    ~ServerController() override;
+
 
     bool initializeDatabase();
     void loadEmployees();
@@ -59,6 +64,15 @@ private slots:
 
     void onRegisterFace(
         qint64 id);
+
+    void onFrameAnalyzed(
+        const QString& peer,
+        const cv::Mat& embedding,
+        qint64 elapsedMs);
+
+    void onFrameAnalysisFailed(
+        const QString& message);
+
 
 private:
     // 一帧的分析结果。text 给人看，其余字段用来判断"状态变了没有"。
@@ -102,4 +116,8 @@ private:
     QList<FaceTemplate> templates_;
     AttendanceRepository attendanceRepository_;
     QHash<QString, FrameResult> lastResultByPeer_;
+    QThread* analysisThread_ = nullptr;
+    RecognitionWorker* analysisWorker_ = nullptr;
+
+
 };

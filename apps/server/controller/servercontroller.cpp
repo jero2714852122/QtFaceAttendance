@@ -6,6 +6,11 @@
 #include "database/employeerepository.h"
 #include <QCoreApplication>
 #include <QDir>
+#include <QElapsedTimer>
+#include <QThread>
+
+#include "vision/recognitionworker.h"
+
 
 ServerController::ServerController(
     Server& server,
@@ -86,6 +91,21 @@ ServerController::ServerController(
         this,
         &ServerController::onRegisterFace);
 }
+
+ServerController::~ServerController()
+{
+    // 退出时先停线程再删对象。线程还在跑就删 QThread，
+    // Qt 会警告 "Destroyed while thread is still running"，还可能崩。
+    if (analysisThread_ != nullptr)
+    {
+        analysisThread_->quit();
+        analysisThread_->wait();
+
+        delete analysisWorker_;
+        delete analysisThread_;
+    }
+}
+
 
 bool ServerController::initializeDatabase()
 {
@@ -178,44 +198,41 @@ void ServerController::onMessageReceived(
         return;
     }
 
-    std::vector<FaceEngine::Face> faces;
-
-    if (!faceEngine_.analyzeJpeg(
-            message.mid(5),
-            faces))
+    if (analysisWorker_ == nullptr)
     {
         window_.appendStatusText(
-            "人脸分析失败："
-            + faceEngine_.lastError());
+            "分析线程未就绪，这一帧丢弃");
 
         return;
     }
 
+    // 把活派给后台线程，然后立刻返回。主线程不等结果，
+    // 继续处理下一个事件——界面不卡，别的客户端的帧也不用排队。
+    RecognitionWorker* worker = analysisWorker_;
+
+    const QByteArray jpegFrame = message.mid(5);
+
+    QMetaObject::invokeMethod(
+        worker,
+        [worker, peer, jpegFrame]() {
+            worker->analyze(peer, jpegFrame);
+        },
+        Qt::QueuedConnection);
+}
+
+void ServerController::onFrameAnalyzed(
+    const QString& peer,
+    const cv::Mat& embedding,
+    qint64 elapsedMs)
+{
     FrameResult result;
 
-    if (faces.empty())
+    if (embedding.empty())
     {
         result.text = "未检测到人脸";
     }
     else
     {
-        // 一张画面里可能有多张脸，只处理可信度最高的那张。考勤场景
-        // 本来就要求一人入镜，多张脸属于异常输入。
-        const FaceEngine::Face* bestFace = nullptr;
-
-        for (const FaceEngine::Face& face : faces)
-        {
-            if (bestFace == nullptr
-                || face.score > bestFace->score)
-            {
-                bestFace = &face;
-            }
-        }
-
-        const cv::Mat embedding =
-            bestFace->embedding;
-        // 登记功能用的永远是"最近一帧的人脸"，跟日志是否输出无关，
-        // 所以每次都要更新。按客户端分开存，最后来的那个记成"活跃源头"。
         lastEmbeddingByPeer_.insert(peer, embedding.clone());
         lastActivePeer_ = peer;
 
@@ -223,9 +240,6 @@ void ServerController::onMessageReceived(
         result.hasFace = true;
     }
 
-    // 拿"是谁"来判断状态变没变，不能拿那行文字。相似度每帧都在第四位
-    // 小数上抖动，文字跟着变，每帧都会算成新状态，日志又会刷屏。
-    // 只跟"这个客户端"上一帧比，不跟别的客户端比。
     const FrameResult previous = lastResultByPeer_.value(peer);
 
     const bool stateChanged =
@@ -233,15 +247,15 @@ void ServerController::onMessageReceived(
         || result.matched != previous.matched
         || result.employeeId != previous.employeeId;
 
-
     if (stateChanged)
     {
-        window_.appendStatusText(result.text);
+        window_.appendStatusText(
+            QString("%1（分析 %2 ms）")
+                .arg(result.text)
+                .arg(elapsedMs));
 
         QString attendanceText;
 
-        // 考勤只在状态变化时判断一次。人一直站在镜头前不该反复记，
-        // 离开再回来才算一次新的出现，那时再交给限流窗口决定。
         if (result.matched)
         {
             attendanceText = recordAttendance(
@@ -256,6 +270,15 @@ void ServerController::onMessageReceived(
 
     lastResultByPeer_.insert(peer, result);
 }
+
+void ServerController::onFrameAnalysisFailed(
+    const QString& message)
+{
+    window_.appendStatusText(
+        "人脸分析失败："
+        + message);
+}
+
 
 ServerController::FrameResult ServerController::recognize(
     const cv::Mat& embedding)
@@ -634,6 +657,47 @@ bool ServerController::initializeVision()
 
     window_.appendStatusText(
         "人脸模型加载成功");
+
+    // 给后台线程再准备一份自己的模型。主线程那份还要用来算相似度，
+    // 而 FaceEngine 不是线程安全的，两边不能共用。
+    analysisWorker_ = new RecognitionWorker;
+
+    if (!analysisWorker_->load(
+            detectorPath,
+            recognizerPath))
+    {
+        window_.appendStatusText(
+            "后台分析线程的模型加载失败："
+            + analysisWorker_->lastError());
+
+        delete analysisWorker_;
+        analysisWorker_ = nullptr;
+
+        return false;
+    }
+
+    analysisThread_ = new QThread;
+
+    // 搬进新线程。之后它的槽都会在那个线程里执行。
+    analysisWorker_->moveToThread(analysisThread_);
+
+    // 结果回到主线程。跨线程默认是队列连接，所以这两个槽一定在主线程跑。
+    QObject::connect(
+        analysisWorker_,
+        &RecognitionWorker::analyzed,
+        this,
+        &ServerController::onFrameAnalyzed);
+
+    QObject::connect(
+        analysisWorker_,
+        &RecognitionWorker::failed,
+        this,
+        &ServerController::onFrameAnalysisFailed);
+
+    analysisThread_->start();
+
+    window_.appendStatusText(
+        "后台分析线程已启动");
 
     return true;
 }
