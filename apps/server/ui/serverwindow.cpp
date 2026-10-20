@@ -199,13 +199,48 @@ ServerWindow::ServerWindow(
 
     // 界面只负责"说有人点了"，开窗口是控制器的事。
     // 界面不认识 AttendanceDialog，也不该认识。
+    //
+    // 这里不需要 lambda：clicked 带一个 bool，而信号不带参数。
+    // Qt 允许接收方少收参数，多出来的直接丢掉。
     QObject::connect(
         attendanceQueryButton_,
         &QPushButton::clicked,
         this,
-        [this]() {
-            emit attendanceQueryRequested();
-        });
+        &ServerWindow::attendanceQueryRequested);
+
+    // 回车提交：选中了员工就是"修改"，没选中就是"添加"。
+    //
+    // 直接调按钮的 click()，让 QPushButton 自己发 clicked 信号，
+    // 复用上面那段已有的逻辑——不给回车单独写一份。
+    // 两份逻辑早晚会改歪一份，这是这类代码最容易出的问题。
+    const auto submitForm = [this]() {
+        if (updateButton_->isEnabled())
+        {
+            updateButton_->click();
+
+            return;
+        }
+
+        addButton_->click();
+    };
+
+    QObject::connect(
+        employeeNoEdit_,
+        &QLineEdit::returnPressed,
+        this,
+        submitForm);
+
+    QObject::connect(
+        nameEdit_,
+        &QLineEdit::returnPressed,
+        this,
+        submitForm);
+
+    QObject::connect(
+        departmentEdit_,
+        &QLineEdit::returnPressed,
+        this,
+        submitForm);
 
     QObject::connect(
         deleteButton_,
