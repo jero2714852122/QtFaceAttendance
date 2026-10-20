@@ -14,6 +14,7 @@ class DatabaseManager;
 class Server;
 class ServerWindow;
 class RecognitionWorker;
+class AttendanceDialog;
 class QThread;
 
 
@@ -54,6 +55,8 @@ private slots:
         const QString& department);
 
     void onRefreshEmployees();
+
+    void onOpenAttendanceDialog();
 
     void onDeleteEmployee(
         qint64 id);
@@ -117,6 +120,9 @@ private:
     FaceTemplateRepository faceTemplateRepository_;
     QList<FaceTemplate> templates_;
     AttendanceRepository attendanceRepository_;
+
+    // 第一次点"考勤查询"时才创建；父对象是主窗口，主窗口销毁时它跟着销毁。
+    AttendanceDialog* attendanceDialog_ = nullptr;
     QHash<QString, FrameResult> lastResultByPeer_;
     QThread* analysisThread_ = nullptr;
     RecognitionWorker* analysisWorker_ = nullptr;

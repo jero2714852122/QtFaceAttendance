@@ -100,6 +100,12 @@ ServerWindow::ServerWindow(
     registerButton_->setToolTip(
         "把最近收到的一帧里的人脸登记给列表中选中的员工");
 
+    // 考勤查询不跟"选中员工"绑定，任何时候都能点，所以这里不 setEnabled(false)。
+    attendanceQueryButton_ =
+        new QPushButton(
+            "考勤查询",
+            centralWidget);
+
     buttonLayout->addWidget(
         addButton_);
 
@@ -114,6 +120,9 @@ ServerWindow::ServerWindow(
 
     buttonLayout->addWidget(
         registerButton_);
+
+    buttonLayout->addWidget(
+        attendanceQueryButton_);
 
     layout->addLayout(
         buttonLayout);
@@ -186,6 +195,16 @@ ServerWindow::ServerWindow(
                 employeeNoEdit_->text(),
                 nameEdit_->text(),
                 departmentEdit_->text());
+        });
+
+    // 界面只负责"说有人点了"，开窗口是控制器的事。
+    // 界面不认识 AttendanceDialog，也不该认识。
+    QObject::connect(
+        attendanceQueryButton_,
+        &QPushButton::clicked,
+        this,
+        [this]() {
+            emit attendanceQueryRequested();
         });
 
     QObject::connect(

@@ -18,6 +18,7 @@ qt_add_executable(face_attendance_server
     database/facetemplaterepository.h database/facetemplaterepository.cpp
     database/attendancerepository.h database/attendancerepository.cpp
     vision/recognitionworker.h vision/recognitionworker.cpp
+    ui/attendancedialog.h ui/attendancedialog.cpp
 )
 
 target_link_libraries(face_attendance_server

@@ -45,6 +45,8 @@ signals:
         const QString& department);
     void registerFaceRequested(
         qint64 id);
+
+    void attendanceQueryRequested();
 protected:
     bool eventFilter(
         QObject* watched,
@@ -61,4 +63,5 @@ private:
     QPushButton* deleteButton_ = nullptr;
     QPushButton* updateButton_ = nullptr;
     QPushButton* registerButton_ = nullptr;
+    QPushButton* attendanceQueryButton_ = nullptr;
 };

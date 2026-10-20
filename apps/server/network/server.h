@@ -51,6 +51,9 @@ signals:
     void clientError(
         const QString& message);
 
+    void attendanceQueryRequested();
+
+
 private slots:
     void onNewConnection();
 

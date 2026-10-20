@@ -10,6 +10,7 @@
 #include <QThread>
 #include <QDateTime>
 #include <QStringList>
+#include "ui/attendancedialog.h"
 #include "vision/recognitionworker.h"
 
 
@@ -91,6 +92,12 @@ ServerController::ServerController(
         &ServerWindow::registerFaceRequested,
         this,
         &ServerController::onRegisterFace);
+
+    QObject::connect(
+        &window_,
+        &ServerWindow::attendanceQueryRequested,
+        this,
+        &ServerController::onOpenAttendanceDialog);
 
     heartbeatCheckTimer_.setInterval(5000);
 
@@ -592,6 +599,25 @@ void ServerController::loadTemplates()
     window_.appendStatusText(
         QString("已加载 %1 张人脸模板")
             .arg(templates_.size()));
+}
+
+void ServerController::onOpenAttendanceDialog()
+{
+    if (attendanceDialog_ == nullptr)
+    {
+        // 第一次点才创建。父对象给 &window_，主窗口一销毁它就跟着销毁，
+        // 不用手写 delete，也不会出现"程序退出了窗口还留着"。
+        attendanceDialog_ =
+            new AttendanceDialog(
+                attendanceRepository_,
+                &window_);
+    }
+
+    // 已存在就直接拿旧的、把窗口提到最前面。
+    // 没有这两句的话，第二次点按钮它会被主窗口盖住，看起来像没反应。
+    attendanceDialog_->show();
+    attendanceDialog_->raise();
+    attendanceDialog_->activateWindow();
 }
 
 void ServerController::onRegisterFace(
