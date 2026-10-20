@@ -2,6 +2,7 @@
 
 #include <QSqlQuery>
 #include <QTemporaryDir>
+#include <QDateTime>
 
 #include <memory>
 
@@ -25,6 +26,8 @@ private slots:
     void removesAnEmployeeAndItsTemplate();
     void rateLimitsAttendance();
     void ignoresRecordsOutsideTheWindow();
+    void dedupesRecentAttendance();
+    void findsRecordsAcrossTheLocalDayBoundary();
 
 private:
     QTemporaryDir directory_;
@@ -235,6 +238,130 @@ void DatabaseTest::ignoresRecordsOutsideTheWindow()
 
     QVERIFY(attendance.hasRecordWithin(employee.id, 120, found));
     QVERIFY(!found);
+}
+
+void DatabaseTest::dedupesRecentAttendance()
+{
+    EmployeeRepository employees(*database_);
+    AttendanceRepository attendance(*database_);
+
+    QVERIFY(employees.addEmployee("2001", "赵六", "运营部"));
+
+    Employee employee;
+    QVERIFY(employees.findByEmployeeNo("2001", employee));
+
+    bool inserted = false;
+
+    // 第一次：窗口内没有记录，应该插进去。
+    QVERIFY2(
+        attendance.addRecordUnlessRecent(
+            employee.id, "check_in", 0.90, 120, inserted),
+        qPrintable(attendance.lastError()));
+    QVERIFY(inserted);
+
+    // 第二次：窗口内已经有了，这一次必须被跳过。
+    //
+    // inserted 先设成 true，是为了万一函数没改它（比如提前 return 了），
+    // 这条断言也能失败，而不是"碰巧是 false 所以过了"。
+    inserted = true;
+
+    QVERIFY2(
+        attendance.addRecordUnlessRecent(
+            employee.id, "check_in", 0.95, 120, inserted),
+        qPrintable(attendance.lastError()));
+    QVERIFY(!inserted);
+
+    // 库里只能有一条。
+    QSqlQuery count(database_->database());
+    count.prepare(
+        "SELECT COUNT(*) FROM attendance_records "
+        "WHERE employee_id = :employee_id");
+    count.bindValue(":employee_id", employee.id);
+    QVERIFY(count.exec());
+    QVERIFY(count.next());
+    QCOMPARE(count.value(0).toInt(), 1);
+
+    // 限流是按人算的，别人不该被牵连。
+    QVERIFY(employees.addEmployee("2002", "钱七", "运营部"));
+
+    Employee other;
+    QVERIFY(employees.findByEmployeeNo("2002", other));
+
+    inserted = false;
+
+    QVERIFY(attendance.addRecordUnlessRecent(
+        other.id, "check_in", 0.85, 120, inserted));
+    QVERIFY(inserted);
+}
+
+void DatabaseTest::findsRecordsAcrossTheLocalDayBoundary()
+{
+    EmployeeRepository employees(*database_);
+    AttendanceRepository attendance(*database_);
+
+    QVERIFY(employees.addEmployee("3001", "孙八", "测试部"));
+
+    Employee employee;
+    QVERIFY(employees.findByEmployeeNo("3001", employee));
+
+    // 造一条"本地今天凌晨 1 点"的记录。
+    // 这个时刻在库里存的是 UTC 的"昨天 17 点"——正是最容易算错的位置。
+    const QDateTime localOneAm(
+        QDate::currentDate(),
+        QTime(1, 0));
+
+    QSqlQuery insert(database_->database());
+    insert.prepare(
+        "INSERT INTO attendance_records "
+        "(employee_id, attendance_type, confidence, created_at) "
+        "VALUES (:employee_id, 'check_in', 0.9, :created_at)");
+    insert.bindValue(":employee_id", employee.id);
+    insert.bindValue(
+        ":created_at",
+        localOneAm.toUTC().toString(
+            QStringLiteral("yyyy-MM-dd HH:mm:ss")));
+    QVERIFY(insert.exec());
+
+    const QDateTime fromLocal(
+        QDate::currentDate(), QTime(0, 0));
+    const QDateTime toLocal(
+        QDate::currentDate().addDays(1), QTime(0, 0));
+
+    // 查"今天"，必须能查到。
+    // 如果 findRecords 忘了把本地时间换成 UTC，这一条会查不到，
+    // 因为库里那条记的是"昨天 17 点"。
+    QList<AttendanceRow> rows;
+    QVERIFY2(
+        attendance.findRecords(
+            fromLocal, toLocal, QString(), rows),
+        qPrintable(attendance.lastError()));
+
+    QCOMPARE(rows.size(), 1);
+    QCOMPARE(rows.first().name, QStringLiteral("孙八"));
+
+    // 查出来的时间必须是本地时间（凌晨 1 点），不是库里的 UTC。
+    QVERIFY(rows.first().createdAt.startsWith(
+        QDate::currentDate().toString(QStringLiteral("yyyy-MM-dd"))));
+    QVERIFY(rows.first().createdAt.contains(QStringLiteral("01:00:00")));
+
+    // 查"昨天"应该查不到它。
+    // 这正好是"没做换算"时会犯的错：凌晨那条被算到了前一天。
+    QList<AttendanceRow> yesterday;
+    QVERIFY(attendance.findRecords(
+        fromLocal.addDays(-1), toLocal.addDays(-1), QString(), yesterday));
+    QCOMPARE(yesterday.size(), 0);
+
+    // 关键字命中姓名。
+    QList<AttendanceRow> hit;
+    QVERIFY(attendance.findRecords(
+        fromLocal, toLocal, QStringLiteral("孙"), hit));
+    QCOMPARE(hit.size(), 1);
+
+    // 关键字不命中。
+    QList<AttendanceRow> miss;
+    QVERIFY(attendance.findRecords(
+        fromLocal, toLocal, QStringLiteral("不存在的人"), miss));
+    QCOMPARE(miss.size(), 0);
 }
 
 // 用 GUILESS 而不是 APPLESS：SQL 模块必须要有一个 QCoreApplication
